@@ -36,6 +36,7 @@ import kotlinx.coroutines.delay
 import splitties.init.appCtx
 import java.io.File
 
+@Deprecated("已由 Compose 版 AboutActivity 取代,保留仅供参考")
 class AboutFragment : PreferenceFragment() {
 
     private val waitDialog by lazy {
