@@ -24,7 +24,6 @@
  */
 package com.script.rhino
 
-import android.os.Build
 import org.htmlunit.corejs.javascript.ClassShutter
 import org.htmlunit.corejs.javascript.Context
 import org.htmlunit.corejs.javascript.Scriptable
@@ -125,8 +124,8 @@ object RhinoClassShutter : ClassShutter {
             okio.FileSystem::class.java,
             okio.FileHandle::class.java,
             okio.Path::class.java,
-            android.content.Context::class.java,
-        ) + if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            androidContextClass,
+        ) + if (isSdkAtLeastO()) {
             arrayOf(FileSystem::class.java, Path::class.java)
         } else {
             emptyArray()
@@ -143,10 +142,10 @@ object RhinoClassShutter : ClassShutter {
             is ObjectOutputStream,
             is okio.FileSystem,
             is okio.FileHandle,
-            is okio.Path,
-            is android.content.Context -> return false
+            is okio.Path -> return false
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (isAndroidContext(obj)) return false
+        if (isSdkAtLeastO()) {
             when (obj) {
                 is FileSystem,
                 is Path -> return false

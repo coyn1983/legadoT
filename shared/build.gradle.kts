@@ -30,6 +30,8 @@ kotlin {
             api(libs.brotli.dec)
             api(libs.commons.lang3)
             api(project(":icu4j"))
+            api(project(":modules:rhino"))
+            implementation(libs.androidx.collection)
         }
 
         androidMain.dependencies {

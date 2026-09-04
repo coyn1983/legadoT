@@ -35,6 +35,7 @@ import io.legado.app.data.entities.rule.ExploreRule
 import io.legado.app.data.entities.rule.SearchRule
 import io.legado.app.help.AppFreezeMonitor
 import io.legado.app.help.AppWebDav
+import io.legado.app.help.CacheBridge
 import io.legado.app.help.CrashHandler
 import io.legado.app.help.DefaultData
 import io.legado.app.help.DispatchersMonitor
@@ -57,6 +58,7 @@ import io.legado.app.lib.theme.WallpaperSeed
 import io.legado.app.model.BookCover
 import io.legado.app.service.AutoTaskService
 import io.legado.app.ui.widget.dialog.CodeEditorWebViewPool
+import io.legado.app.utils.ACache
 import io.legado.app.utils.ChineseUtils
 import io.legado.app.utils.LogUtils
 import io.legado.app.utils.defaultSharedPreferences
@@ -84,6 +86,14 @@ class App : Application() {
         BigVariableStore.getChapterVariable = RuleBigDataHelp::getChapterVariable
         BigVariableStore.putRssVariable = RuleBigDataHelp::putRssVariable
         BigVariableStore.getRssVariable = RuleBigDataHelp::getRssVariable
+        CacheBridge.dbGet = { key -> appDb.cacheDao.get(key) }
+        CacheBridge.dbPut = { cache -> appDb.cacheDao.insert(cache) }
+        CacheBridge.dbDelete = { key -> appDb.cacheDao.delete(key) }
+        CacheBridge.filePutBinary = { key, value, saveTime -> ACache.get().put(key, value, saveTime) }
+        CacheBridge.fileGetBinary = { key -> ACache.get().getAsBinary(key) }
+        CacheBridge.filePutString = { key, value, saveTime -> ACache.get().put(key, value, saveTime) }
+        CacheBridge.fileGetString = { key -> ACache.get().getAsString(key) }
+        CacheBridge.fileRemove = { key -> ACache.get().remove(key) }
         CrashHandler(this)
         if (isDebuggable) {
             ThreadUtils.setThreadAssertsDisabledForTesting(true)
