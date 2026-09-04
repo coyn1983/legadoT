@@ -1,13 +1,10 @@
 package io.legado.app.model.analyzeRule
 
-import androidx.annotation.Keep
 import com.jayway.jsonpath.JsonPath
 import com.jayway.jsonpath.ReadContext
-import io.legado.app.utils.printOnDebug
 
 
 @Suppress("RegExpRedundantEscape")
-@Keep
 class AnalyzeByJSonPath(json: Any) {
 
     companion object {
@@ -68,7 +65,7 @@ class AnalyzeByJSonPath(json: Any) {
         }
     }
 
-    internal fun getStringList(rule: String): List<String> {
+    fun getStringList(rule: String): List<String> {
         val result = ArrayList<String>()
         if (rule.isEmpty()) return result
         val ruleAnalyzes = RuleAnalyzer(rule, true) //设置平衡组为代码平衡
@@ -122,11 +119,11 @@ class AnalyzeByJSonPath(json: Any) {
         }
     }
 
-    internal fun getObject(rule: String): Any {
+    fun getObject(rule: String): Any {
         return ctx.read(rule)
     }
 
-    internal fun getList(rule: String): ArrayList<Any>? {
+    fun getList(rule: String): ArrayList<Any>? {
         val result = ArrayList<Any>()
         if (rule.isEmpty()) return result
         val ruleAnalyzes = RuleAnalyzer(rule, true) //设置平衡组为代码平衡
@@ -169,4 +166,7 @@ class AnalyzeByJSonPath(json: Any) {
         return result
     }
 
+}
+
+private fun Throwable.printOnDebug() {
 }

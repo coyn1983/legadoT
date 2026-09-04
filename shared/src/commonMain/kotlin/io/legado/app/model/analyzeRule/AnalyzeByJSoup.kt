@@ -1,6 +1,5 @@
 package io.legado.app.model.analyzeRule
 
-import androidx.annotation.Keep
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
@@ -13,7 +12,6 @@ import org.seimicrawler.xpath.JXNode
  * Created by GKF on 2018/1/25.
  * 书源规则解析
  */
-@Keep
 class AnalyzeByJSoup(doc: Any) {
 
     companion object {
@@ -40,12 +38,12 @@ class AnalyzeByJSoup(doc: Any) {
     /**
      * 获取列表
      */
-    internal fun getElements(rule: String) = getElements(element, rule)
+    fun getElements(rule: String) = getElements(element, rule)
 
     /**
      * 合并内容列表,得到内容
      */
-    internal fun getString(ruleStr: String): String? {
+    fun getString(ruleStr: String): String? {
         if (ruleStr.isEmpty()) {
             return null
         }
@@ -63,13 +61,13 @@ class AnalyzeByJSoup(doc: Any) {
     /**
      * 获取一个字符串
      */
-    internal fun getString0(ruleStr: String) =
+    fun getString0(ruleStr: String) =
         getStringList(ruleStr).let { if (it.isEmpty()) "" else it[0] }
 
     /**
      * 获取所有内容列表
      */
-    internal fun getStringList(ruleStr: String): List<String> {
+    fun getStringList(ruleStr: String): List<String> {
 
         val textS = ArrayList<String>()
 

@@ -2,15 +2,20 @@ package io.legado.app.model.analyzeRule
 
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonObject
+import java.util.regex.Pattern
 
 @Suppress("unused")
 class CustomUrl(url: String) {
+
+    companion object {
+        val paramPattern: Pattern = Pattern.compile("\\s*,\\s*(?=\\{)")
+    }
 
     private val mUrl: String
     private val attribute = hashMapOf<String, Any>()
 
     init {
-        val urlMatcher = AnalyzeUrl.paramPattern.matcher(url)
+        val urlMatcher = paramPattern.matcher(url)
         mUrl = if (urlMatcher.find()) {
             val attr = url.substring(urlMatcher.end())
             GSON.fromJsonObject<Map<String, Any>>(attr).getOrNull()?.let {

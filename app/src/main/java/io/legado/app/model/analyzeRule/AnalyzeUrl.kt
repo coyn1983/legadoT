@@ -733,7 +733,7 @@ class AnalyzeUrl(
     }
 
     companion object {
-        val paramPattern: Pattern = Pattern.compile("\\s*,\\s*(?=\\{)")
+        val paramPattern: Pattern = CustomUrl.paramPattern
         private val pagePattern = Pattern.compile("<(.*?)>")
         private const val querySafeCharacters =
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~!$%&()*+,/:;=?@[\\]^`{|}"

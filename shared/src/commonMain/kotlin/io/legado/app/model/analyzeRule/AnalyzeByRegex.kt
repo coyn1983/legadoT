@@ -1,9 +1,7 @@
 package io.legado.app.model.analyzeRule
 
-import androidx.annotation.Keep
 import java.util.regex.Pattern
 
-@Keep
 object AnalyzeByRegex {
 
     fun getElement(res: String, regs: Array<String>, index: Int = 0): List<String>? {

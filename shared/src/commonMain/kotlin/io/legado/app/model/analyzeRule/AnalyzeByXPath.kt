@@ -1,7 +1,5 @@
 package io.legado.app.model.analyzeRule
 
-import android.text.TextUtils
-import androidx.annotation.Keep
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
@@ -10,7 +8,6 @@ import org.jsoup.select.Elements
 import org.seimicrawler.xpath.JXDocument
 import org.seimicrawler.xpath.JXNode
 
-@Keep
 class AnalyzeByXPath(doc: Any) {
     private var jxNode: Any = parse(doc)
 
@@ -49,7 +46,7 @@ class AnalyzeByXPath(doc: Any) {
         }
     }
 
-    internal fun getElements(xPath: String): List<JXNode>? {
+    fun getElements(xPath: String): List<JXNode>? {
 
         if (xPath.isEmpty()) return null
 
@@ -89,7 +86,7 @@ class AnalyzeByXPath(doc: Any) {
         return jxNodes
     }
 
-    internal fun getStringList(xPath: String): List<String> {
+    fun getStringList(xPath: String): List<String> {
 
         val result = ArrayList<String>()
         val ruleAnalyzes = RuleAnalyzer(xPath)
@@ -135,7 +132,7 @@ class AnalyzeByXPath(doc: Any) {
         val rules = ruleAnalyzes.splitRule("&&", "||")
         if (rules.size == 1) {
             getResult(rule)?.let {
-                return TextUtils.join("\n", it)
+                return it.joinToString("\n")
             }
             return null
         } else {

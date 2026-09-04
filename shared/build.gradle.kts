@@ -22,6 +22,9 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.kotlinx.coroutines.core)
             api(libs.gson)
+            api(libs.jsoup)
+            api(libs.jsoupxpath)
+            api(libs.json.path)
         }
     }
 }
