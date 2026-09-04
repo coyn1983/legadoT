@@ -8,7 +8,7 @@ plugins {
 kotlin {
     android {
         namespace = "io.legado.shared"
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 26
     }
 
