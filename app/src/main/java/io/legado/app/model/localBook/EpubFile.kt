@@ -23,6 +23,7 @@ import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import org.jsoup.select.Elements
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -109,7 +110,7 @@ class EpubFile(var book: Book) {
             //val zipFile = BookHelp.getEpubFile(book)
             BookHelp.getBookPFD(book)?.let {
                 fileDescriptor = it
-                val zipFile = AndroidZipFile(it, book.originName)
+                val zipFile = AndroidZipFile(FileInputStream(it.fileDescriptor).channel, book.originName)
                 EpubReader().readEpubLazy(zipFile, "utf-8")
             }
 
