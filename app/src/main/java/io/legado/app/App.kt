@@ -48,14 +48,28 @@ import io.legado.app.help.config.ThemeConfig
 import io.legado.app.help.config.ThemeConfig.applyDayNight
 import io.legado.app.help.config.ThemeConfig.applyDayNightInit
 import io.legado.app.help.coroutine.Coroutine
+import io.legado.app.help.http.CookieBridge
+import io.legado.app.help.http.CookieStore
 import io.legado.app.help.http.Cronet
+import io.legado.app.help.http.HttpBridge
 import io.legado.app.help.http.ObsoleteUrlFactory
+import io.legado.app.help.http.getProxyClient
+import io.legado.app.help.http.newCallStrResponse
 import io.legado.app.help.http.okHttpClient
 import io.legado.app.help.rhino.NativeBaseSource
 import io.legado.app.help.source.SourceHelp
 import io.legado.app.help.storage.Backup
 import io.legado.app.lib.theme.WallpaperSeed
 import io.legado.app.model.BookCover
+import io.legado.app.model.Debug
+import io.legado.app.model.DebugBridge
+import io.legado.app.model.JsScopeBridge
+import io.legado.app.model.analyzeRule.AnalyzeRule
+import io.legado.app.model.analyzeRule.AnalyzeRuleAndroidDelegate
+import io.legado.app.model.analyzeRule.AnalyzeUrl
+import io.legado.app.model.analyzeRule.AnalyzeUrlAndroidDelegate
+import io.legado.app.model.analyzeRule.BackstageWebViewFetcher
+import io.legado.app.model.analyzeRule.WebBookPreUpdateHook
 import io.legado.app.service.AutoTaskService
 import io.legado.app.ui.widget.dialog.CodeEditorWebViewPool
 import io.legado.app.utils.ACache
@@ -65,6 +79,7 @@ import io.legado.app.utils.defaultSharedPreferences
 import io.legado.app.utils.getPrefBoolean
 import io.legado.app.utils.isDebuggable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.chromium.base.ThreadUtils
 import splitties.init.appCtx
 import splitties.systemservices.notificationManager
@@ -75,6 +90,9 @@ import java.util.logging.Level
 class App : Application() {
 
     private lateinit var oldConfig: Configuration
+
+    /** SharedJsScope 的 jsLib 文件缓存(cacheDir/shareJs), 与迁移前 SharedJsScope 内部实现一致 */
+    private val jsScopeACache by lazy { ACache.get(java.io.File(appCtx.cacheDir, "shareJs")) }
 
     override fun onCreate() {
         super.onCreate()
@@ -94,6 +112,31 @@ class App : Application() {
         CacheBridge.filePutString = { key, value, saveTime -> ACache.get().put(key, value, saveTime) }
         CacheBridge.fileGetString = { key -> ACache.get().getAsString(key) }
         CacheBridge.fileRemove = { key -> ACache.get().remove(key) }
+        //规则编排器(AnalyzeRule/AnalyzeUrl/SharedJsScope 已迁入 shared)平台桥接
+        DebugBridge.log = { sourceUrl, msg ->
+            if (sourceUrl == null) Debug.log(msg) else Debug.log(sourceUrl, msg)
+        }
+        DebugBridge.putDebug = { tag, msg ->
+            AppLog.putDebug(msg, tag = tag ?: "源")
+        }
+        CookieBridge.store = CookieStore
+        HttpBridge.proxyClient = { proxy -> getProxyClient(proxy) }
+        JsScopeBridge.loadAsset = { path ->
+            runCatching {
+                appCtx.assets.open(path).bufferedReader().use { it.readText() }
+            }.getOrNull()
+        }
+        JsScopeBridge.cacheGet = { key -> jsScopeACache.getAsString(key) }
+        JsScopeBridge.cachePut = { key, value -> jsScopeACache.put(key, value) }
+        JsScopeBridge.download = { url ->
+            runBlocking { okHttpClient.newCallStrResponse { url(url) }.body }
+        }
+        JsScopeBridge.logDebug = { msg -> Debug.log(msg) }
+        JsScopeBridge.putAppDebug = { msg -> AppLog.putDebug(msg) }
+        AnalyzeRule.javaDelegateFactory = { AnalyzeRuleAndroidDelegate(it) }
+        AnalyzeRule.preUpdateHook = WebBookPreUpdateHook
+        AnalyzeUrl.javaDelegateFactory = { AnalyzeUrlAndroidDelegate(it) }
+        AnalyzeUrl.webViewFetcher = BackstageWebViewFetcher
         CrashHandler(this)
         if (isDebuggable) {
             ThreadUtils.setThreadAssertsDisabledForTesting(true)

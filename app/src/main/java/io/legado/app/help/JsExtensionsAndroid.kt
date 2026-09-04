@@ -80,7 +80,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  */
 @Keep
 @Suppress("unused")
-interface JsExtensionsAndroid : JsExtensions, JsEncodeUtilsAndroid {
+interface JsExtensionsAndroid : JsExtensionsDelegate, JsEncodeUtilsAndroid {
 
     fun getSource(): BaseSource?
 

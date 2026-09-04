@@ -1,11 +1,11 @@
 package io.legado.app.help
 
-import io.legado.app.data.entities.BaseSource
+import io.legado.app.data.entities.SourceContract
 import io.legado.app.exception.ConcurrentException
 import io.legado.app.model.analyzeRule.AnalyzeUrl.ConcurrentRecord
 import kotlinx.coroutines.delay
 
-class ConcurrentRateLimiter(val source: BaseSource?) {
+class ConcurrentRateLimiter(val source: SourceContract?) {
 
     companion object {
         private val concurrentRecordMap = hashMapOf<String, ConcurrentRecord>()

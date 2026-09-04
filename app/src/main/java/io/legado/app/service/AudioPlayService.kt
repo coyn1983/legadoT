@@ -39,7 +39,7 @@ import io.legado.app.help.glide.ImageLoader
 import io.legado.app.model.AudioCache
 import io.legado.app.model.AudioPlay
 import io.legado.app.model.analyzeRule.AnalyzeUrl
-import io.legado.app.model.analyzeRule.AnalyzeUrl.Companion.getMediaItem
+import io.legado.app.model.analyzeRule.getMediaItem
 import io.legado.app.receiver.MediaButtonReceiver
 import io.legado.app.ui.book.audio.AudioPlayActivity
 import io.legado.app.utils.activityPendingIntent

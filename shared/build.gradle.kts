@@ -29,6 +29,7 @@ kotlin {
             api(libs.okhttp)
             api(libs.brotli.dec)
             api(libs.commons.lang3)
+            api(libs.commons.text)
             api(project(":icu4j"))
             api(project(":modules:rhino"))
             implementation(libs.androidx.collection)

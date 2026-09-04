@@ -1,42 +1,33 @@
 package io.legado.app.model.analyzeRule
 
-import android.annotation.SuppressLint
-import android.util.Base64
-import androidx.annotation.Keep
-import androidx.media3.common.MediaItem
-import com.bumptech.glide.load.model.GlideUrl
 import com.script.buildScriptBindings
 import com.script.rhino.RhinoScriptEngine
+import com.script.rhino.rhinoContextOrNull
 import com.script.rhino.runScriptWithContext
-import io.legado.app.constant.AppConst.UA_NAME
 import io.legado.app.constant.AppPattern
 import io.legado.app.constant.AppPattern.JS_PATTERN
 import io.legado.app.constant.AppPattern.dataUriRegex
-import io.legado.app.data.entities.BaseSource
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
+import io.legado.app.data.entities.SourceContract
 import io.legado.app.help.CacheManager
 import io.legado.app.help.ConcurrentRateLimiter
-import io.legado.app.help.JsExtensionsAndroid
-import io.legado.app.help.config.AppConfig
-import io.legado.app.help.exoplayer.ExoPlayerHelper
-import io.legado.app.help.glide.GlideHeaders
-import io.legado.app.help.http.BackstageWebView
-import io.legado.app.help.http.CookieManager
-import io.legado.app.help.http.CookieManager.mergeCookies
-import io.legado.app.help.http.CookieStore
+import io.legado.app.help.JsExtensions
+import io.legado.app.help.JsExtensionsDelegate
+import io.legado.app.help.http.CookieBridge
+import io.legado.app.help.http.CookieBridge.cookieJarHeader
+import io.legado.app.help.http.HttpBridge
 import io.legado.app.help.http.RequestMethod
 import io.legado.app.help.http.StrResponse
 import io.legado.app.help.http.addHeaders
 import io.legado.app.help.http.get
-import io.legado.app.help.http.getProxyClient
+import io.legado.app.help.http.mergeCookies
 import io.legado.app.help.http.newCallResponse
 import io.legado.app.help.http.newCallStrResponse
 import io.legado.app.help.http.postForm
 import io.legado.app.help.http.postJson
 import io.legado.app.help.http.postMultipart
-import io.legado.app.help.source.getShareScope
-import io.legado.app.model.Debug
+import io.legado.app.model.DebugBridge
 import io.legado.app.model.SharedJsScope
 import io.legado.app.utils.EncoderUtils
 import io.legado.app.utils.GSON
@@ -44,7 +35,6 @@ import io.legado.app.utils.GSONStrict
 import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.fromJsonArray
 import io.legado.app.utils.fromJsonObject
-import io.legado.app.utils.get
 import io.legado.app.utils.isJson
 import io.legado.app.utils.isJsonArray
 import io.legado.app.utils.isJsonObject
@@ -73,8 +63,6 @@ import kotlin.math.max
  * 搜索URL规则解析
  */
 @Suppress("unused", "MemberVisibilityCanBePrivate")
-@Keep
-@SuppressLint("DefaultLocale")
 class AnalyzeUrl(
     private val mUrl: String,
     private val key: String? = null,
@@ -83,7 +71,7 @@ class AnalyzeUrl(
     private val speakText: String? = null,
     private val speakSpeed: Int? = null,
     private var baseUrl: String = "",
-    private val source: BaseSource? = null,
+    private val source: SourceContract? = null,
     private val ruleData: RuleDataInterface? = null,
     private val chapter: BookChapter? = null,
     private val readTimeout: Long? = null,
@@ -91,7 +79,7 @@ class AnalyzeUrl(
     private var coroutineContext: CoroutineContext = EmptyCoroutineContext,
     headerMapF: Map<String, String>? = null,
     hasLoginHeader: Boolean = true
-) : JsExtensionsAndroid {
+) : JsExtensions {
 
     var ruleUrl = ""
         private set
@@ -118,6 +106,8 @@ class AnalyzeUrl(
     private val domain: String
     private var webViewDelayTime: Long = 0
     private val concurrentRateLimiter = ConcurrentRateLimiter(source)
+
+    private var cachedJavaDelegate: JsExtensionsDelegate? = null
 
     // 服务器ID
     var serverID: Long? = null
@@ -387,9 +377,9 @@ class AnalyzeUrl(
         val pageStr = get("page")
         val pageValue: Any? = page ?: pageStr.toIntOrNull() ?: pageStr.takeIf { it.isNotBlank() }
         val bindings = buildScriptBindings { bindings ->
-            bindings["java"] = this
+            bindings["java"] = getJavaDelegate()
             bindings["baseUrl"] = baseUrl
-            bindings["cookie"] = CookieStore
+            bindings["cookie"] = CookieBridge.store
             bindings["cache"] = CacheManager
             bindings["page"] = pageValue
             bindings["key"] = key
@@ -413,9 +403,18 @@ class AnalyzeUrl(
         return RhinoScriptEngine.eval(jsStr, scope, coroutineContext)
     }
 
+    /**
+     * java 绑定对象: 优先 app 注入的 Android 扩展委托(含 webView/toast 等),
+     * 未注入时回落为自身(仅纯 JsExtensions 方法)。
+     */
+    private fun getJavaDelegate(): Any {
+        cachedJavaDelegate?.let { return it }
+        return javaDelegateFactory?.invoke(this)?.also { cachedJavaDelegate = it } ?: this
+    }
+
     fun put(key: String, value: String): String {
         if (key == "bookName" || key == "title") {
-            Debug.log("≡变量 $key 在特定情况下会被覆盖，建议使用其他键名")
+            DebugBridge.log(null, "≡变量 $key 在特定情况下会被覆盖，建议使用其他键名")
         }
         chapter?.putVariable(key, value)
             ?: ruleData?.putVariable(key, value)
@@ -452,7 +451,8 @@ class AnalyzeUrl(
         concurrentRateLimiter.withLimit {
             setCookie()
             val strResponse: StrResponse
-            if (this.useWebView && useWebView) {
+            val webViewFetcher = webViewFetcher
+            if (this.useWebView && useWebView && webViewFetcher != null) {
                 strResponse = when (method) {
                     RequestMethod.POST -> {
                         val res = getClient().newCallStrResponse(retry) {
@@ -464,7 +464,7 @@ class AnalyzeUrl(
                                 postJson(body)
                             }
                         }
-                        BackstageWebView(
+                        webViewFetcher.getStrResponse(
                             url = res.url,
                             html = res.body,
                             tag = source?.getKey(),
@@ -473,18 +473,19 @@ class AnalyzeUrl(
                             headerMap = headerMap,
                             delayTime = webViewDelayTime,
                             source = source,
-                        ).getStrResponse()
+                        )
                     }
 
-                    else -> BackstageWebView(
+                    else -> webViewFetcher.getStrResponse(
                         url = url,
+                        html = null,
                         tag = source?.getKey(),
                         javaScript = webJs ?: jsStr,
                         sourceRegex = sourceRegex,
                         headerMap = headerMap,
                         delayTime = webViewDelayTime,
                         source = source,
-                    ).getStrResponse()
+                    )
                 }
             } else {
                 strResponse = getClient().newCallStrResponse(retry) {
@@ -560,7 +561,7 @@ class AnalyzeUrl(
     }
 
     private fun getClient(): OkHttpClient {
-        val client = getProxyClient(proxy)
+        val client = HttpBridge.proxyClient(proxy)
         if (
             readTimeoutMs == null &&
             callTimeoutMs == null &&
@@ -612,8 +613,7 @@ class AnalyzeUrl(
         val dataUriFindResult = dataUriRegex.find(urlNoQuery)
         if (dataUriFindResult != null) {
             val dataUriBase64 = dataUriFindResult.groupValues[1]
-            val byteArray = Base64.decode(dataUriBase64, Base64.DEFAULT)
-            return byteArray
+            return EncoderUtils.base64DecodeToByteArray(dataUriBase64)
         }
         return null
     }
@@ -674,44 +674,18 @@ class AnalyzeUrl(
      * 设置cookie 优先级
      * urlOption临时cookie > 数据库cookie
      */
-    private fun setCookie() {
-        val cookie = kotlin.run {
-            /* 每次调用getXX cookieJar已经保存过了
-            if (enabledCookieJar) {
-                val key = "${domain}_cookieJar"
-                CacheManager.getFromMemory(key)?.let {
-                    return@run it
-                }
-            }
-            */
-            CookieStore.getCookie(domain)
-        }
+    fun setCookie() {
+        val cookie = CookieBridge.store?.getCookie(domain) ?: ""
         if (cookie.isNotEmpty()) {
             mergeCookies(cookie, headerMap["Cookie"])?.let {
                 headerMap.put("Cookie", it)
             }
         }
         if (enabledCookieJar) {
-            headerMap[CookieManager.cookieJarHeader] = "1"
+            headerMap[cookieJarHeader] = "1"
         } else {
-            headerMap.remove(CookieManager.cookieJarHeader)
+            headerMap.remove(cookieJarHeader)
         }
-    }
-
-    /**
-     *获取处理过阅读定义的urlOption和cookie的GlideUrl
-     */
-    fun getGlideUrl(): GlideUrl {
-        setCookie()
-        return GlideUrl(url, GlideHeaders(headerMap))
-    }
-
-    fun getUserAgent(): String {
-        return headerMap.get(UA_NAME, true) ?: AppConfig.userAgent
-    }
-
-    fun isPost(): Boolean {
-        return method == RequestMethod.POST
     }
 
     private fun parseResolveIpLiteral(value: String): List<InetAddress>? {
@@ -728,8 +702,39 @@ class AnalyzeUrl(
         return ipv4Like || ipv6Like
     }
 
-    override fun getSource(): BaseSource? {
+    fun isPost(): Boolean {
+        return method == RequestMethod.POST
+    }
+
+    fun getSource(): SourceContract? {
         return source
+    }
+
+    /**
+     * 调试日志(等价 app 侧 JsExtensionsAndroid.log 的行为)
+     */
+    private fun log(msg: String) {
+        rhinoContextOrNull?.ensureActive()
+        DebugBridge.log(source?.getKey(), msg)
+        DebugBridge.putDebug(source?.getTag(), msg)
+    }
+
+    /**
+     * webView 抓取钩子(app 接线为 BackstageWebView), 保持 useWebView 请求行为
+     */
+    interface WebViewFetcher {
+
+        suspend fun getStrResponse(
+            url: String?,
+            html: String?,
+            tag: String?,
+            javaScript: String?,
+            sourceRegex: String?,
+            headerMap: Map<String, String>?,
+            delayTime: Long,
+            source: SourceContract?
+        ): StrResponse
+
     }
 
     companion object {
@@ -738,14 +743,16 @@ class AnalyzeUrl(
         private const val querySafeCharacters =
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~!$%&()*+,/:;=?@[\\]^`{|}"
 
-        fun AnalyzeUrl.getMediaItem(): MediaItem {
-            setCookie()
-            return ExoPlayerHelper.createMediaItem(url, headerMap)
-        }
+        /** app 接线: 为每个 AnalyzeUrl 提供完整 java.* 方法表(含 Android 扩展) */
+        @JvmStatic
+        var javaDelegateFactory: ((AnalyzeUrl) -> JsExtensionsDelegate)? = null
+
+        /** app 接线: useWebView 请求的抓取实现(BackstageWebView) */
+        @JvmStatic
+        var webViewFetcher: WebViewFetcher? = null
 
     }
 
-    @Keep
     data class UrlOption(
         private var method: String? = null,
         private var charset: String? = null,

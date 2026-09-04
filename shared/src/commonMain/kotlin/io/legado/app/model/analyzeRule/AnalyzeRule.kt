@@ -1,25 +1,21 @@
 package io.legado.app.model.analyzeRule
 
-import android.text.TextUtils
-import androidx.annotation.Keep
 import com.script.CompiledScript
 import com.script.buildScriptBindings
 import com.script.rhino.RhinoScriptEngine
+import com.script.rhino.rhinoContextOrNull
 import io.legado.app.constant.AppPattern.JS_PATTERN
 import io.legado.app.data.entities.BaseBook
-import io.legado.app.data.entities.BaseSource
-import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.RssArticle
+import io.legado.app.data.entities.SourceContract
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.CacheManager
-import io.legado.app.help.JsExtensionsAndroid
-import io.legado.app.help.http.CookieStore
-import io.legado.app.help.source.getShareScope
+import io.legado.app.help.JsExtensions
+import io.legado.app.help.JsExtensionsDelegate
+import io.legado.app.help.http.CookieBridge
+import io.legado.app.model.DebugBridge
 import io.legado.app.model.SharedJsScope
-import io.legado.app.model.Debug
-import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.GSON
 import io.legado.app.utils.GSONStrict
 import io.legado.app.utils.NetworkUtils
@@ -50,13 +46,12 @@ import kotlin.coroutines.EmptyCoroutineContext
 /**
  * 解析规则获取结果
  */
-@Keep
 @Suppress("unused", "RegExpRedundantEscape", "MemberVisibilityCanBePrivate")
 class AnalyzeRule(
     private var ruleData: RuleDataInterface? = null,
-    private val source: BaseSource? = null,
+    private val source: SourceContract? = null,
     private val preUpdateJs: Boolean = false
-) : JsExtensionsAndroid {
+) : JsExtensions {
 
     private val book get() = ruleData as? BaseBook
     private val rssArticle get() = ruleData as? RssArticle
@@ -83,6 +78,8 @@ class AnalyzeRule(
     private var coroutineContext: CoroutineContext = EmptyCoroutineContext
 
     private var loggedNonStandardJSON = false
+
+    private var cachedJavaDelegate: JsExtensionsDelegate? = null
 
     @JvmOverloads
     fun setContent(content: Any?, baseUrl: String? = null): AnalyzeRule {
@@ -256,13 +253,13 @@ class AnalyzeRule(
      */
     @JvmOverloads
     fun getString(ruleStr: String?, mContent: Any? = null, isUrl: Boolean = false): String {
-        if (TextUtils.isEmpty(ruleStr)) return ""
+        if (ruleStr.isNullOrEmpty()) return ""
         val ruleList = splitSourceRuleCacheString(ruleStr)
         return getString(ruleList, mContent, isUrl)
     }
 
     fun getString(ruleStr: String?, unescape: Boolean): String {
-        if (TextUtils.isEmpty(ruleStr)) return ""
+        if (ruleStr.isNullOrEmpty()) return ""
         val ruleList = splitSourceRuleCacheString(ruleStr)
         return getString(ruleList, unescape = unescape)
     }
@@ -340,7 +337,7 @@ class AnalyzeRule(
      * 获取Element
      */
     fun getElement(ruleStr: String): Any? {
-        if (TextUtils.isEmpty(ruleStr)) return null
+        if (ruleStr.isEmpty()) return null
         var result: Any? = null
         val content = this.content
         val ruleList = splitSourceRule(ruleStr, true)
@@ -470,7 +467,7 @@ class AnalyzeRule(
                 .getOrNull()
                 ?.let {
                     if (!loggedNonStandardJSON) {
-                        Debug.log("≡@put 规则 JSON 格式不规范，请改为规范格式")
+                        DebugBridge.log(null, "≡@put 规则 JSON 格式不规范，请改为规范格式")
                         loggedNonStandardJSON = true
                     }
                     putMap.putAll(it)
@@ -788,7 +785,7 @@ class AnalyzeRule(
      */
     fun put(key: String, value: String): String {
         if (key == "bookName" || key == "title") {
-            Debug.log("≡变量 $key 在特定情况下会被覆盖，建议使用其他键名")
+            DebugBridge.log(null, "≡变量 $key 在特定情况下会被覆盖，建议使用其他键名")
         }
         chapter?.putVariable(key, value)
             ?: book?.putVariable(key, value)
@@ -829,8 +826,8 @@ class AnalyzeRule(
     fun evalJS(jsStr: String, result: Any? = null): Any? {
         val pageValue = get("page").toIntOrNull() ?: 1
         val bindings = buildScriptBindings { bindings ->
-            bindings["java"] = this
-            bindings["cookie"] = CookieStore
+            bindings["java"] = getJavaDelegate()
+            bindings["cookie"] = CookieBridge.store
             bindings["cache"] = CacheManager
             bindings["source"] = source
             bindings["book"] = book
@@ -866,20 +863,29 @@ class AnalyzeRule(
         return result
     }
 
+    /**
+     * java 绑定对象: 优先 app 注入的 Android 扩展委托(含 webView/toast 等),
+     * 未注入时回落为自身(仅纯 JsExtensions 方法)。
+     */
+    private fun getJavaDelegate(): Any {
+        cachedJavaDelegate?.let { return it }
+        return javaDelegateFactory?.invoke(this)?.also { cachedJavaDelegate = it } ?: this
+    }
+
     private fun compileScriptCache(jsStr: String): CompiledScript {
         return scriptCache.getOrPutLimit(jsStr, 16) {
             RhinoScriptEngine.compile(jsStr)
         }
     }
 
-    override fun getSource(): BaseSource? {
+    fun getSource(): SourceContract? {
         return source
     }
 
     /**
      * js实现跨域访问,不能删
      */
-    override fun ajax(url: Any): String? {
+    fun ajax(url: Any): String? {
         val urlStr = if (url is List<*>) {
             url.firstOrNull().toString()
         } else {
@@ -907,19 +913,12 @@ class AnalyzeRule(
      */
     fun reGetBook() {
         if (!preUpdateJs) throw NoStackTraceException("只能在 preUpdateJs 中调用")
-        val bookSource = source as? BookSource
-        val book = book as? Book
-        if (bookSource == null || book == null) return
+        val bookSource = source ?: return
+        val book = book ?: return
+        val hook = preUpdateHook ?: return
         runBlocking(coroutineContext) {
             withTimeout(1800000) {
-                WebBook.preciseSearchAwait(bookSource, book.name, book.author)
-                    .getOrThrow().let {
-                        book.bookUrl = it.bookUrl
-                        it.variableMap.forEach { entry ->
-                            book.putVariable(entry.key, entry.value)
-                        }
-                    }
-                WebBook.getBookInfoAwait(bookSource, book, false)
+                hook.reGetBook(bookSource, book)
             }
         }
     }
@@ -929,14 +928,34 @@ class AnalyzeRule(
      */
     fun refreshTocUrl() {
         if (!preUpdateJs) throw NoStackTraceException("只能在 preUpdateJs 中调用")
-        val bookSource = source as? BookSource
-        val book = book as? Book
-        if (bookSource == null || book == null) return
+        val bookSource = source ?: return
+        val book = book ?: return
+        val hook = preUpdateHook ?: return
         runBlocking(coroutineContext) {
             withTimeout(1800000) {
-                WebBook.getBookInfoAwait(bookSource, book, false)
+                hook.refreshTocUrl(bookSource, book)
             }
         }
+    }
+
+    /**
+     * 调试日志(等价 app 侧 JsExtensionsAndroid.log 的行为)
+     */
+    private fun log(msg: String) {
+        rhinoContextOrNull?.ensureActive()
+        DebugBridge.log(source?.getKey(), msg)
+        DebugBridge.putDebug(source?.getTag(), msg)
+    }
+
+    /**
+     * preUpdateJs 的 WebBook 工作钩子(app 接线), 保持 reGetBook/refreshTocUrl 行为
+     */
+    interface PreUpdateHook {
+
+        suspend fun reGetBook(source: SourceContract, book: BaseBook)
+
+        suspend fun refreshTocUrl(source: SourceContract, book: BaseBook)
+
     }
 
     companion object {
@@ -944,6 +963,14 @@ class AnalyzeRule(
         private val evalPattern =
             Pattern.compile("@get:\\{[^}]+?\\}|\\{\\{[\\w\\W]*?\\}\\}", Pattern.CASE_INSENSITIVE)
         private val regexPattern = Pattern.compile("\\$\\d{1,2}")
+
+        /** app 接线: 为每个 AnalyzeRule 提供完整 java.* 方法表(含 Android 扩展) */
+        @JvmStatic
+        var javaDelegateFactory: ((AnalyzeRule) -> JsExtensionsDelegate)? = null
+
+        /** app 接线: preUpdateJs 中 reGetBook/refreshTocUrl 的 WebBook 实现 */
+        @JvmStatic
+        var preUpdateHook: PreUpdateHook? = null
 
         fun AnalyzeRule.setCoroutineContext(context: CoroutineContext): AnalyzeRule {
             coroutineContext = context.minusKey(ContinuationInterceptor)

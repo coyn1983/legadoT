@@ -14,7 +14,6 @@ import io.legado.app.help.JsExtensionsAndroid
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.crypto.SymmetricCryptoAndroid
 import io.legado.app.help.http.CookieStore
-import io.legado.app.help.source.getShareScope
 import io.legado.app.model.SharedJsScope
 import io.legado.app.model.jsSource.JsSourceEngine
 import io.legado.app.model.login.LoginUiV2
@@ -32,11 +31,11 @@ import kotlin.coroutines.CoroutineContext
  * 可在js里调用,source.xxx()
  */
 @Suppress("unused")
-interface BaseSource : JsExtensionsAndroid {
+interface BaseSource : JsExtensionsAndroid, SourceContract {
     /**
      * 并发率
      */
-    var concurrentRate: String?
+    override var concurrentRate: String?
 
     /**
      * 登录地址
@@ -56,16 +55,23 @@ interface BaseSource : JsExtensionsAndroid {
     /**
      * 启用cookieJar
      */
-    var enabledCookieJar: Boolean?
+    override var enabledCookieJar: Boolean?
 
     /**
      * js库
      */
-    var jsLib: String?
+    override var jsLib: String?
 
-    fun getTag(): String
+    override fun getTag(): String
 
-    fun getKey(): String
+    override fun getKey(): String
+
+    /**
+     * 获取源共享js作用域(SourceContract 实现, 供迁入 shared 的规则编排器调用)
+     */
+    override fun getShareScope(coroutineContext: CoroutineContext?): ScriptBindings? {
+        return SharedJsScope.getScope(jsLib, coroutineContext)
+    }
 
     override fun getSource(): BaseSource? {
         return this
@@ -186,7 +192,7 @@ interface BaseSource : JsExtensionsAndroid {
     /**
      * 解析header规则
      */
-    fun getHeaderMap(hasLoginHeader: Boolean = false) = HashMap<String, String>().apply {
+    override fun getHeaderMap(hasLoginHeader: Boolean) = HashMap<String, String>().apply {
         header?.let {
             try {
                 val json = extractInlineJs(it)?.let { js ->
@@ -308,7 +314,7 @@ interface BaseSource : JsExtensionsAndroid {
     /**
      * 保存数据
      */
-    fun put(key: String, value: String): String {
+    override fun put(key: String, value: String): String {
         CacheManager.put("v_${getKey()}_${key}", value)
         return value
     }
@@ -316,7 +322,7 @@ interface BaseSource : JsExtensionsAndroid {
     /**
      * 获取保存的数据
      */
-    fun get(key: String): String {
+    override fun get(key: String): String {
         return CacheManager.get("v_${getKey()}_${key}") ?: ""
     }
 
@@ -337,7 +343,7 @@ interface BaseSource : JsExtensionsAndroid {
             bindings["cache"] = CacheManager
             bindings.apply(bindingsConfig)
         }
-        val sharedScope = getShareScope() ?: SharedJsScope.getCryptoScope(null)
+        val sharedScope = getShareScope(null) ?: SharedJsScope.getCryptoScope(null)
         val scope = if (sharedScope == null) {
             RhinoScriptEngine.getRuntimeScope(bindings)
         } else {

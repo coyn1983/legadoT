@@ -5,25 +5,15 @@ import com.google.gson.reflect.TypeToken
 import com.script.ScriptBindings
 import com.script.rhino.RhinoScriptEngine
 import io.legado.app.exception.NoStackTraceException
-import io.legado.app.help.http.newCallStrResponse
-import io.legado.app.help.http.okHttpClient
-import io.legado.app.utils.ACache
 import io.legado.app.utils.GSON
 import io.legado.app.utils.MD5Utils
 import io.legado.app.utils.isAbsUrl
 import io.legado.app.utils.isJsonObject
-import io.legado.app.constant.AppLog
-import io.legado.app.model.Debug
-import kotlinx.coroutines.runBlocking
-import splitties.init.appCtx
-import java.io.File
+import java.io.FileNotFoundException
 import java.lang.ref.WeakReference
 import kotlin.coroutines.CoroutineContext
 
 object SharedJsScope {
-
-    private val cacheFolder by lazy { File(appCtx.cacheDir, "shareJs") }
-    private val aCache by lazy { ACache.get(cacheFolder) }
 
     private val scopeMap = LruCache<String, WeakReference<ScriptBindings>>(16)
     private const val CRYPTO_JS_ASSET = "scripts/cryptojs.min.js"
@@ -38,15 +28,16 @@ object SharedJsScope {
         val cached = cryptoJsText
         if (cached != null) return cached
         return try {
-            val text = appCtx.assets.open(CRYPTO_JS_ASSET).bufferedReader().use { it.readText() }
+            val text = JsScopeBridge.loadAsset(CRYPTO_JS_ASSET)
+                ?: throw FileNotFoundException(CRYPTO_JS_ASSET)
             cryptoJsText = text
             text
         } catch (e: Throwable) {
             val msg = "加载CryptoJS失败: ${e.message}"
             runCatching {
-                aCache.put(CRYPTO_JS_ERROR_KEY, msg)
-                Debug.log(msg)
-                AppLog.putDebug(msg)
+                JsScopeBridge.cachePut(CRYPTO_JS_ERROR_KEY, msg)
+                JsScopeBridge.logDebug(msg)
+                JsScopeBridge.putAppDebug(msg)
             }
             null
         }
@@ -90,15 +81,11 @@ object SharedJsScope {
                 jsMap.values.forEach { value ->
                     if (value.isAbsUrl()) {
                         val fileName = MD5Utils.md5Encode(value)
-                        var js = aCache.getAsString(fileName)
+                        var js = JsScopeBridge.cacheGet(fileName)
                         if (js == null) {
-                            js = runBlocking {
-                                okHttpClient.newCallStrResponse {
-                                    url(value)
-                                }.body
-                            }
+                            js = JsScopeBridge.download(value)
                             if (js != null) {
-                                aCache.put(fileName, js)
+                                JsScopeBridge.cachePut(fileName, js)
                             } else {
                                 throw NoStackTraceException("下载jsLib-${value}失败")
                             }
