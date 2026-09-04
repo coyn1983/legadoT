@@ -1,6 +1,5 @@
 package io.legado.app.data.entities
 
-import android.os.Parcelable
 import android.text.TextUtils
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -19,10 +18,8 @@ import io.legado.app.data.entities.rule.TocRule
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonObject
 import io.legado.app.utils.splitNotBlank
-import kotlinx.parcelize.Parcelize
 
 @Suppress("unused")
-@Parcelize
 @TypeConverters(BookSource.Converters::class)
 @Entity(
     tableName = "book_sources",
@@ -103,7 +100,7 @@ data class BookSource(
     var ruleReview: ReviewRule? = null,
     // JS 源主脚本;非空即为JS源(spec: docs/superpowers/specs/2026-07-07-js-single-file-source-design.md)
     var mainJs: String? = null,
-) : Parcelable, BaseSource {
+) : BaseSource {
 
     override fun getTag(): String {
         return bookSourceName

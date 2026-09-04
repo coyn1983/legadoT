@@ -1,11 +1,8 @@
 package io.legado.app.data.entities.rule
 
-import android.os.Parcelable
 import com.google.gson.JsonDeserializer
 import io.legado.app.utils.INITIAL_GSON
-import kotlinx.parcelize.Parcelize
 
-@Parcelize
 data class ReviewRule(
     // 是否启用段评
     var enabled: Boolean = false,
@@ -34,7 +31,7 @@ data class ReviewRule(
     var replyNameRule: String? = null,
     var replyBadgeRule: String? = null,
     var replyContentRule: String? = null,
-) : Parcelable {
+) {
 
     companion object {
 

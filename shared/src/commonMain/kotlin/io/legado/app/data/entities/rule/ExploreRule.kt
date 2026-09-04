@@ -1,14 +1,11 @@
 package io.legado.app.data.entities.rule
 
-import android.os.Parcelable
 import com.google.gson.JsonDeserializer
 import io.legado.app.utils.INITIAL_GSON
-import kotlinx.parcelize.Parcelize
 
 /**
  * 发现结果规则
  */
-@Parcelize
 data class ExploreRule(
     override var bookList: String? = null,
     override var name: String? = null,
@@ -20,7 +17,7 @@ data class ExploreRule(
     override var bookUrl: String? = null,
     override var coverUrl: String? = null,
     override var wordCount: String? = null
-) : BookListRule, Parcelable {
+) : BookListRule {
 
     companion object {
 

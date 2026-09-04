@@ -1,11 +1,8 @@
 package io.legado.app.data.entities.rule
 
-import android.os.Parcelable
 import com.google.gson.JsonDeserializer
 import io.legado.app.utils.INITIAL_GSON
-import kotlinx.parcelize.Parcelize
 
-@Parcelize
 data class TocRule(
     var preUpdateJs: String? = null,
     var chapterList: String? = null,
@@ -17,7 +14,7 @@ data class TocRule(
     var isPay: String? = null,
     var updateTime: String? = null,
     var nextTocUrl: String? = null
-) : Parcelable {
+) {
 
     companion object {
 
