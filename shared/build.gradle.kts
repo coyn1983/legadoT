@@ -25,6 +25,14 @@ kotlin {
             api(libs.jsoup)
             api(libs.jsoupxpath)
             api(libs.json.path)
+            api(libs.okhttp)
+            api(libs.brotli.dec)
+            api(libs.commons.lang3)
+            api(project(":icu4j"))
+        }
+
+        androidMain.dependencies {
+            implementation(libs.splitties.systemservices)
         }
     }
 }

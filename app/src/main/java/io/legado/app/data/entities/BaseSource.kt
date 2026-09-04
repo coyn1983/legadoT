@@ -6,6 +6,7 @@ import com.script.rhino.RhinoScriptEngine
 import io.legado.app.constant.AppConst
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.AppPattern.JS_PATTERN
+import io.legado.app.constant.androidId
 import io.legado.app.data.entities.rule.RowUi
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.CacheManager

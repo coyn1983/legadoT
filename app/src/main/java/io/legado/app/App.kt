@@ -19,7 +19,9 @@ import io.legado.app.base.AppContextWrapper
 import io.legado.app.constant.AppConst.channelIdDownload
 import io.legado.app.constant.AppConst.channelIdReadAloud
 import io.legado.app.constant.AppConst.channelIdWeb
+import io.legado.app.constant.AppLog
 import io.legado.app.constant.PreferKey
+import io.legado.app.constant.SharedLog
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
@@ -73,6 +75,8 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        SharedLog.isDebug = BuildConfig.DEBUG
+        SharedLog.put = { message, throwable -> AppLog.put(message, throwable) }
         CrashHandler(this)
         if (isDebuggable) {
             ThreadUtils.setThreadAssertsDisabledForTesting(true)

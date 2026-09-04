@@ -8,8 +8,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.lifecycleScope
 import io.legado.app.R
 import io.legado.app.base.BaseActivity
-import io.legado.app.constant.AppConst.appInfo
 import io.legado.app.constant.AppLog
+import io.legado.app.constant.AppConst
+import io.legado.app.constant.appInfo
 import io.legado.app.databinding.ActivityAboutBinding
 import io.legado.app.help.CrashHandler
 import io.legado.app.help.config.AppConfig
@@ -66,8 +67,8 @@ class AboutActivity : BaseActivity<ActivityAboutBinding>() {
         appName = getString(R.string.app_name),
         appSummary = getString(R.string.about_description),
         appSummaryHighlight = getString(R.string.legado_gzh),
-        versionName = appInfo.versionName,
-        versionCode = appInfo.versionCode,
+        versionName = AppConst.appInfo.versionName,
+        versionCode = AppConst.appInfo.versionCode,
         mainEntries = listOf(
             AboutEntry(
                 title = getString(R.string.contributors),
@@ -76,7 +77,7 @@ class AboutActivity : BaseActivity<ActivityAboutBinding>() {
             ),
             AboutEntry(
                 title = getString(R.string.update_log),
-                subtitle = "${getString(R.string.version)} ${appInfo.versionName}",
+                subtitle = "${getString(R.string.version)} ${AppConst.appInfo.versionName}",
                 action = AboutAction.ShowUpdateLog
             ),
             AboutEntry(

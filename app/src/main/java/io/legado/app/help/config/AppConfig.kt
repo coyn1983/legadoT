@@ -5,6 +5,7 @@ import android.os.Build
 import io.legado.app.BuildConfig
 import io.legado.app.constant.AppConst
 import io.legado.app.constant.PreferKey
+import io.legado.app.constant.sysElevation
 import io.legado.app.data.appDb
 import io.legado.app.utils.canvasrecorder.CanvasRecorderFactory
 import io.legado.app.utils.getPrefBoolean

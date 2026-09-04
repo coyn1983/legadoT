@@ -1,6 +1,5 @@
 package io.legado.app.utils
 
-import android.text.TextUtils
 import io.legado.app.lib.icu4j.CharsetDetector
 import org.jsoup.Jsoup
 import java.io.File
@@ -30,7 +29,7 @@ object EncodingDetect {
             var charsetStr: String
             for (metaTag in metaTags) {
                 charsetStr = metaTag.attr("charset")
-                if (!TextUtils.isEmpty(charsetStr)) {
+                if (charsetStr.isNotEmpty()) {
                     return charsetStr
                 }
                 val httpEquiv = metaTag.attr("http-equiv")
@@ -42,7 +41,7 @@ object EncodingDetect {
                     } else {
                         content.substringAfter(";")
                     }
-                    if (!TextUtils.isEmpty(charsetStr)) {
+                    if (charsetStr.isNotEmpty()) {
                         return charsetStr
                     }
                 }

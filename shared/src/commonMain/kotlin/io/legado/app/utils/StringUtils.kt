@@ -1,8 +1,5 @@
 package io.legado.app.utils
 
-import android.annotation.SuppressLint
-import android.text.TextUtils.isEmpty
-import android.util.Base64
 import org.apache.commons.lang3.StringUtils as CommonsStringUtils
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -74,7 +71,6 @@ object StringUtils {
                     difDate == 0L -> "今天"
                     difDate < DAY_OF_YESTERDAY -> "昨天"
                     else -> {
-                        @SuppressLint("SimpleDateFormat")
                         val convertFormat = SimpleDateFormat("yyyy-MM-dd")
                         convertFormat.format(date)
                     }
@@ -87,7 +83,6 @@ object StringUtils {
                 difHour < HOUR_OF_DAY -> difHour.toString() + "小时前"
                 difDate < DAY_OF_YESTERDAY -> "昨天"
                 else -> {
-                    @SuppressLint("SimpleDateFormat")
                     val convertFormat = SimpleDateFormat("yyyy-MM-dd")
                     convertFormat.format(date)
                 }
@@ -101,7 +96,6 @@ object StringUtils {
     /**
      * 首字母大写
      */
-    @SuppressLint("DefaultLocale")
     fun toFirstCapital(str: String): String {
         return str.substring(0, 1).uppercase(Locale.getDefault()) + str.substring(1)
     }
@@ -273,7 +267,7 @@ object StringUtils {
      * 移除字符串首尾空字符的高效方法(利用ASCII值判断,包括全角空格)
      */
     fun trim(s: String): String {
-        if (isEmpty(s)) return ""
+        if (s.isEmpty()) return ""
         var start = 0
         val len = s.length
         var end = len - 1
@@ -323,7 +317,7 @@ object StringUtils {
             return@runCatching try {
                 gzip = GZIPOutputStream(out)
                 gzip.write(str.toByteArray())
-                Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+                EncoderUtils.base64Encode(out.toByteArray())
             } finally {
                 gzip?.runCatching {
                     close()
@@ -345,7 +339,7 @@ object StringUtils {
             var inputStream: ByteArrayInputStream? = null
             var ginZip: GZIPInputStream? = null
             return@runCatching try {
-                val compressed = Base64.decode(str, Base64.NO_WRAP)
+                val compressed = EncoderUtils.base64DecodeToByteArray(str)
                 inputStream = ByteArrayInputStream(compressed)
                 ginZip = GZIPInputStream(inputStream)
                 ginZip.copyTo(outputStream)

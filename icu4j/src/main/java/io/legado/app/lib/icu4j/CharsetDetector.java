@@ -8,12 +8,6 @@
  */
 package io.legado.app.lib.icu4j;
 
-import android.os.ParcelFileDescriptor;
-import android.system.OsConstants;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -92,22 +86,10 @@ public class CharsetDetector {
      * @return This CharsetDetector
      * @stable ICU 3.4
      */
-    public CharsetDetector setText(@NonNull byte[] in) {
+    public CharsetDetector setText(byte[] in) {
         fRawInput = in;
         fRawLength = in.length;
 
-        return this;
-    }
-
-    public CharsetDetector setText(@NonNull ParcelFileDescriptor pfd) {
-        fRawInput = new byte[kBufSize];
-        try {
-            android.system.Os.lseek(pfd.getFileDescriptor(), 0, OsConstants.SEEK_SET);
-            fRawLength = android.system.Os.read(pfd.getFileDescriptor(), fRawInput, 0, fRawInput.length);
-            android.system.Os.lseek(pfd.getFileDescriptor(), 0, OsConstants.SEEK_SET);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
         return this;
     }
 
@@ -127,7 +109,7 @@ public class CharsetDetector {
      * @stable ICU 3.4
      */
 
-    public CharsetDetector setText(@NonNull InputStream in) throws IOException {
+    public CharsetDetector setText(InputStream in) throws IOException {
         fInputStream = in;
         fInputStream.mark(kBufSize);
         fRawInput = new byte[kBufSize];   // Always make a new buffer because the
@@ -168,7 +150,6 @@ public class CharsetDetector {
      * <code>null</code> if there are no matches.
      * @stable ICU 3.4
      */
-    @Nullable
     public CharsetMatch detect() {
 //   TODO:  A better implementation would be to copy the detect loop from
 //          detectAll(), and cut it short as soon as a match with a high confidence

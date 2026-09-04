@@ -7,9 +7,10 @@ import androidx.core.content.edit
 import androidx.documentfile.provider.DocumentFile
 import io.legado.app.BuildConfig
 import io.legado.app.R
-import io.legado.app.constant.AppConst.androidId
+import io.legado.app.constant.AppConst
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.PreferKey
+import io.legado.app.constant.androidId
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookGroup
@@ -285,7 +286,7 @@ object Restore {
         fileToListT<ReadRecord>(path, "readRecord.json")?.let {
             it.forEach { readRecord ->
                 //判断是不是本机记录
-                if (readRecord.deviceId != androidId) {
+                if (readRecord.deviceId != AppConst.androidId) {
                     kotlin.runCatching {
                         appDb.readRecordDao.insert(readRecord)
                     }
