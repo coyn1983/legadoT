@@ -1,23 +1,21 @@
 package io.legado.app.model.webBook
 
-import io.legado.app.constant.AppLog
+import io.legado.app.constant.SharedLog
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.data.entities.BookSource
-import io.legado.app.data.entities.BookSourcePart
-import io.legado.app.data.entities.SearchBook
+import io.legado.app.data.entities.BookSourceContract
+import io.legado.app.data.entities.SearchBookContract
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.book.addType
 import io.legado.app.help.book.removeAllBookType
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.http.StrResponse
 import io.legado.app.help.source.getBookType
-import io.legado.app.model.Debug
+import io.legado.app.model.DebugBridge
 import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setCoroutineContext
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
-import io.legado.app.model.jsSource.JsSourceBook
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -34,27 +32,28 @@ object WebBook {
      */
     fun searchBook(
         scope: CoroutineScope,
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         key: String,
         page: Int? = 1,
         context: CoroutineContext = Dispatchers.IO,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         executeContext: CoroutineContext = Dispatchers.Main,
-    ): Coroutine<ArrayList<SearchBook>> {
+    ): Coroutine<ArrayList<SearchBookContract>> {
         return Coroutine.async(scope, context, start = start, executeContext = executeContext) {
             searchBookAwait(bookSource, key, page)
         }
     }
 
     suspend fun searchBookAwait(
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         key: String,
         page: Int? = 1,
         filter: ((name: String, author: String) -> Boolean)? = null,
         shouldBreak: ((size: Int) -> Boolean)? = null
-    ): ArrayList<SearchBook> {
+    ): ArrayList<SearchBookContract> {
         if (bookSource.isJsSource()) {
-            return JsSourceBook.searchAwait(bookSource, key, page, filter)
+            return WebBookBridge.jsSource?.searchAwait(bookSource, key, page, filter)
+                ?: throw NoStackTraceException("JS 书源代理未接线")
         }
         val searchUrl = bookSource.searchUrl
         if (searchUrl.isNullOrBlank()) {
@@ -96,23 +95,24 @@ object WebBook {
      */
     fun exploreBook(
         scope: CoroutineScope,
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         url: String,
         page: Int? = 1,
         context: CoroutineContext = Dispatchers.IO,
-    ): Coroutine<List<SearchBook>> {
+    ): Coroutine<List<SearchBookContract>> {
         return Coroutine.async(scope, context) {
             exploreBookAwait(bookSource, url, page)
         }
     }
 
     suspend fun exploreBookAwait(
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         url: String,
         page: Int? = 1,
-    ): ArrayList<SearchBook> {
+    ): ArrayList<SearchBookContract> {
         if (bookSource.isJsSource()) {
-            return JsSourceBook.exploreAwait(bookSource, url, page)
+            return WebBookBridge.jsSource?.exploreAwait(bookSource, url, page)
+                ?: throw NoStackTraceException("JS 书源代理未接线")
         }
         val ruleData = RuleData()
         val analyzeUrl = AnalyzeUrl(
@@ -146,7 +146,7 @@ object WebBook {
      */
     fun getBookInfo(
         scope: CoroutineScope,
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         book: Book,
         context: CoroutineContext = Dispatchers.IO,
         canReName: Boolean = true,
@@ -157,12 +157,13 @@ object WebBook {
     }
 
     suspend fun getBookInfoAwait(
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         book: Book,
         canReName: Boolean = true,
     ): Book {
         if (bookSource.isJsSource()) {
-            return JsSourceBook.getBookInfoAwait(bookSource, book)
+            return WebBookBridge.jsSource?.getBookInfoAwait(bookSource, book)
+                ?: throw NoStackTraceException("JS 书源代理未接线")
         }
         book.removeAllBookType()
         book.addType(bookSource.getBookType())
@@ -208,7 +209,7 @@ object WebBook {
      */
     fun getChapterList(
         scope: CoroutineScope,
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         book: Book,
         runPerJs: Boolean = false,
         context: CoroutineContext = Dispatchers.IO
@@ -218,7 +219,7 @@ object WebBook {
         }
     }
 
-    suspend fun runPreUpdateJs(bookSource: BookSource, book: Book): Result<Unit> {
+    suspend fun runPreUpdateJs(bookSource: BookSourceContract, book: Book): Result<Unit> {
         return kotlin.runCatching {
             val preUpdateJs = bookSource.ruleToc?.preUpdateJs
             if (!preUpdateJs.isNullOrBlank()) {
@@ -228,17 +229,18 @@ object WebBook {
             }
         }.onFailure {
             coroutineContext.ensureActive()
-            AppLog.put("执行preUpdateJs规则失败 书源:${bookSource.bookSourceName}", it)
+            SharedLog.put("执行preUpdateJs规则失败 书源:${bookSource.bookSourceName}", it)
         }
     }
 
     suspend fun getChapterListAwait(
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         book: Book,
         runPerJs: Boolean = false
     ): Result<List<BookChapter>> {
         if (bookSource.isJsSource()) {
-            return JsSourceBook.getChapterListAwait(bookSource, book)
+            return WebBookBridge.jsSource?.getChapterListAwait(bookSource, book)
+                ?: throw NoStackTraceException("JS 书源代理未接线")
         }
         book.removeAllBookType()
         book.addType(bookSource.getBookType())
@@ -288,7 +290,7 @@ object WebBook {
      */
     fun getContent(
         scope: CoroutineScope,
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         book: Book,
         bookChapter: BookChapter,
         nextChapterUrl: String? = null,
@@ -310,21 +312,22 @@ object WebBook {
     }
 
     suspend fun getContentAwait(
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         book: Book,
         bookChapter: BookChapter,
         nextChapterUrl: String? = null,
         needSave: Boolean = true
     ): String {
         if (bookSource.isJsSource()) {
-            return JsSourceBook.getContentAwait(bookSource, book, bookChapter, nextChapterUrl, needSave)
+            return WebBookBridge.jsSource?.getContentAwait(bookSource, book, bookChapter, nextChapterUrl, needSave)
+                ?: throw NoStackTraceException("JS 书源代理未接线")
         }
         if (bookSource.getContentRule().content.isNullOrEmpty()) {
-            Debug.log(bookSource.bookSourceUrl, "⇒正文规则为空,使用章节链接:${bookChapter.url}")
+            DebugBridge.log(bookSource.bookSourceUrl, "⇒正文规则为空,使用章节链接:${bookChapter.url}")
             return bookChapter.url
         }
         if (bookChapter.isVolume && bookChapter.url.startsWith(bookChapter.title)) {
-            Debug.log(bookSource.bookSourceUrl, "⇒一级目录正文不解析规则")
+            DebugBridge.log(bookSource.bookSourceUrl, "⇒一级目录正文不解析规则")
             // 卷占位章正文恒为空串,排版层按空正文垂直居中卷名;tag(updateTime 规则结果)不作正文
             return ""
         }
@@ -375,28 +378,8 @@ object WebBook {
     /**
      * 精准搜索
      */
-    fun preciseSearch(
-        scope: CoroutineScope,
-        bookSourceParts: List<BookSourcePart>,
-        name: String,
-        author: String,
-        context: CoroutineContext = Dispatchers.IO,
-        semaphore: Semaphore? = null,
-    ): Coroutine<Pair<Book, BookSource>> {
-        return Coroutine.async(scope, context, semaphore = semaphore) {
-            for (s in bookSourceParts) {
-                val source = s.getBookSource() ?: continue
-                val book = preciseSearchAwait(source, name, author).getOrNull()
-                if (book != null) {
-                    return@async Pair(book, source)
-                }
-            }
-            throw NoStackTraceException("没有搜索到<$name>$author")
-        }
-    }
-
     suspend fun preciseSearchAwait(
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         name: String,
         author: String,
     ): Result<Book> {
@@ -419,12 +402,12 @@ object WebBook {
     /**
      * 检测重定向
      */
-    private fun checkRedirect(bookSource: BookSource, response: StrResponse) {
+    private fun checkRedirect(bookSource: BookSourceContract, response: StrResponse) {
         response.raw.priorResponse?.let {
             if (it.isRedirect) {
-                Debug.log(bookSource.bookSourceUrl, "≡检测到重定向(${it.code})")
-                Debug.log(bookSource.bookSourceUrl, "┌重定向后地址")
-                Debug.log(bookSource.bookSourceUrl, "└${response.url}")
+                DebugBridge.log(bookSource.bookSourceUrl, "≡检测到重定向(${it.code})")
+                DebugBridge.log(bookSource.bookSourceUrl, "┌重定向后地址")
+                DebugBridge.log(bookSource.bookSourceUrl, "└${response.url}")
             }
         }
     }

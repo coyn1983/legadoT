@@ -1,31 +1,23 @@
 package io.legado.app.model.webBook
 
-import io.legado.app.R
 import io.legado.app.data.entities.Book
-import io.legado.app.data.entities.BookSource
-import io.legado.app.data.entities.SearchBook
+import io.legado.app.data.entities.BookSourceContract
+import io.legado.app.data.entities.SearchBookContract
 import io.legado.app.data.entities.rule.BookListRule
-import io.legado.app.data.entities.rule.ExploreKind
 import io.legado.app.exception.NoStackTraceException
-import io.legado.app.help.book.BookHelp
-import io.legado.app.help.source.exploreKindsJson
+import io.legado.app.help.book.BookFormat
 import io.legado.app.help.source.getBookType
-import io.legado.app.model.Debug
+import io.legado.app.model.DebugBridge
 import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setCoroutineContext
 import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setRuleData
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.RuleData
-import io.legado.app.utils.GSON
-import io.legado.app.utils.GSONStrict
 import io.legado.app.utils.HtmlFormatter
 import io.legado.app.utils.NetworkUtils
 import io.legado.app.utils.StringUtils.wordCountFormat
-import io.legado.app.utils.fromJsonArray
 import kotlinx.coroutines.ensureActive
-import splitties.init.appCtx
 import kotlin.coroutines.coroutineContext
-import io.legado.app.data.entities.toSearchBook
 
 /**
  * 获取书籍列表
@@ -34,7 +26,7 @@ object BookList {
 
     @Throws(Exception::class)
     suspend fun analyzeBookList(
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         ruleData: RuleData,
         analyzeUrl: AnalyzeUrl,
         baseUrl: String,
@@ -43,27 +35,24 @@ object BookList {
         isRedirect: Boolean = false,
         filter: ((name: String, author: String) -> Boolean)? = null,
         shouldBreak: ((size: Int) -> Boolean)? = null
-    ): ArrayList<SearchBook> {
+    ): ArrayList<SearchBookContract> {
         body ?: throw NoStackTraceException(
-            appCtx.getString(
-                R.string.error_get_web_content,
-                analyzeUrl.ruleUrl
-            )
+            WebBookBridge.errorGetWebContent(analyzeUrl.ruleUrl)
         )
-        val bookList = ArrayList<SearchBook>()
-        Debug.log(bookSource.bookSourceUrl, "≡获取成功:${analyzeUrl.ruleUrl}")
-        Debug.log(bookSource.bookSourceUrl, body, state = 10)
+        val bookList = ArrayList<SearchBookContract>()
+        DebugBridge.log(bookSource.bookSourceUrl, "≡获取成功:${analyzeUrl.ruleUrl}")
+        DebugBridge.logFull(bookSource.bookSourceUrl, body, true, 10)
         val analyzeRule = AnalyzeRule(ruleData, bookSource)
         analyzeRule.setContent(body).setBaseUrl(baseUrl)
         analyzeRule.setRedirectUrl(baseUrl)
         analyzeRule.setCoroutineContext(coroutineContext)
         if (!isSearch) {
-            checkExploreJson(bookSource)
+            WebBookBridge.checkExploreKindsJson(bookSource)
         }
         if (isSearch) bookSource.bookUrlPattern?.let {
             coroutineContext.ensureActive()
             if (baseUrl.matches(it.toRegex())) {
-                Debug.log(bookSource.bookSourceUrl, "≡链接为详情页")
+                DebugBridge.log(bookSource.bookSourceUrl, "≡链接为详情页")
                 getInfoItem(
                     bookSource,
                     analyzeRule,
@@ -95,11 +84,11 @@ object BookList {
         if (ruleList.startsWith("+")) {
             ruleList = ruleList.substring(1)
         }
-        Debug.log(bookSource.bookSourceUrl, "┌获取书籍列表")
+        DebugBridge.log(bookSource.bookSourceUrl, "┌获取书籍列表")
         collections = analyzeRule.getElements(ruleList)
         coroutineContext.ensureActive()
         if (collections.isEmpty() && bookSource.bookUrlPattern.isNullOrEmpty()) {
-            Debug.log(bookSource.bookSourceUrl, "└列表为空,按详情页解析")
+            DebugBridge.log(bookSource.bookSourceUrl, "└列表为空,按详情页解析")
             getInfoItem(
                 bookSource, analyzeRule, analyzeUrl, body, baseUrl, ruleData.getVariable(),
                 isRedirect, filter
@@ -116,7 +105,7 @@ object BookList {
             val ruleKind = analyzeRule.splitSourceRule(bookListRule.kind)
             val ruleLastChapter = analyzeRule.splitSourceRule(bookListRule.lastChapter)
             val ruleWordCount = analyzeRule.splitSourceRule(bookListRule.wordCount)
-            Debug.log(bookSource.bookSourceUrl, "└列表大小:${collections.size}")
+            DebugBridge.log(bookSource.bookSourceUrl, "└列表大小:${collections.size}")
             for ((index, item) in collections.withIndex()) {
                 getSearchItem(
                     bookSource, analyzeRule, item, baseUrl, ruleData.getVariable(),
@@ -147,13 +136,13 @@ object BookList {
                 bookList.reverse()
             }
         }
-        Debug.log(bookSource.bookSourceUrl, "◇书籍总数:${bookList.size}")
+        DebugBridge.log(bookSource.bookSourceUrl, "◇书籍总数:${bookList.size}")
         return bookList
     }
 
     @Throws(Exception::class)
     private suspend fun getInfoItem(
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         analyzeRule: AnalyzeRule,
         analyzeUrl: AnalyzeUrl,
         body: String,
@@ -161,7 +150,7 @@ object BookList {
         variable: String?,
         isRedirect: Boolean,
         filter: ((name: String, author: String) -> Boolean)?
-    ): SearchBook? {
+    ): SearchBookContract? {
         val book = Book(variable = variable)
         book.bookUrl = if (isRedirect) {
             baseUrl
@@ -186,14 +175,14 @@ object BookList {
             return null
         }
         if (book.name.isNotBlank()) {
-            return book.toSearchBook()
+            return WebBookBridge.bookToSearchBook(book)
         }
         return null
     }
 
     @Throws(Exception::class)
     private suspend fun getSearchItem(
-        bookSource: BookSource,
+        bookSource: BookSourceContract,
         analyzeRule: AnalyzeRule,
         item: Any,
         baseUrl: String,
@@ -208,8 +197,8 @@ object BookList {
         ruleWordCount: List<AnalyzeRule.SourceRule>,
         ruleIntro: List<AnalyzeRule.SourceRule>,
         ruleLastChapter: List<AnalyzeRule.SourceRule>
-    ): SearchBook? {
-        val searchBook = SearchBook(variable = variable)
+    ): SearchBookContract? {
+        val searchBook = WebBookBridge.newSearchBook(variable)
         searchBook.type = bookSource.getBookType()
         searchBook.origin = bookSource.bookSourceUrl
         searchBook.originName = bookSource.bookSourceName
@@ -217,93 +206,80 @@ object BookList {
         analyzeRule.setRuleData(searchBook)
         analyzeRule.setContent(item)
         coroutineContext.ensureActive()
-        Debug.log(bookSource.bookSourceUrl, "┌获取书名", log)
-        searchBook.name = BookHelp.formatBookName(analyzeRule.getString(ruleName))
-        Debug.log(bookSource.bookSourceUrl, "└${searchBook.name}", log)
+        DebugBridge.logFull(bookSource.bookSourceUrl, "┌获取书名", log, 1)
+        searchBook.name = BookFormat.formatBookName(analyzeRule.getString(ruleName))
+        DebugBridge.logFull(bookSource.bookSourceUrl, "└${searchBook.name}", log, 1)
         if (searchBook.name.isNotEmpty()) {
             coroutineContext.ensureActive()
-            Debug.log(bookSource.bookSourceUrl, "┌获取作者", log)
-            searchBook.author = BookHelp.formatBookAuthor(analyzeRule.getString(ruleAuthor))
-            Debug.log(bookSource.bookSourceUrl, "└${searchBook.author}", log)
+            DebugBridge.logFull(bookSource.bookSourceUrl, "┌获取作者", log, 1)
+            searchBook.author = BookFormat.formatBookAuthor(analyzeRule.getString(ruleAuthor))
+            DebugBridge.logFull(bookSource.bookSourceUrl, "└${searchBook.author}", log, 1)
             if (filter?.invoke(searchBook.name, searchBook.author) == false) {
                 return null
             }
             coroutineContext.ensureActive()
-            Debug.log(bookSource.bookSourceUrl, "┌获取分类", log)
+            DebugBridge.logFull(bookSource.bookSourceUrl, "┌获取分类", log, 1)
             try {
                 searchBook.kind = analyzeRule.getStringList(ruleKind)?.joinToString(",")
-                Debug.log(bookSource.bookSourceUrl, "└${searchBook.kind ?: ""}", log)
+                DebugBridge.logFull(bookSource.bookSourceUrl, "└${searchBook.kind ?: ""}", log, 1)
             } catch (e: Exception) {
                 coroutineContext.ensureActive()
-                Debug.log(bookSource.bookSourceUrl, "└${e.localizedMessage}", log)
+                DebugBridge.logFull(bookSource.bookSourceUrl, "└${e.localizedMessage}", log, 1)
             }
             coroutineContext.ensureActive()
-            Debug.log(bookSource.bookSourceUrl, "┌获取字数", log)
+            DebugBridge.logFull(bookSource.bookSourceUrl, "┌获取字数", log, 1)
             try {
                 searchBook.wordCount = wordCountFormat(analyzeRule.getString(ruleWordCount))
-                Debug.log(bookSource.bookSourceUrl, "└${searchBook.wordCount}", log)
+                DebugBridge.logFull(bookSource.bookSourceUrl, "└${searchBook.wordCount}", log, 1)
             } catch (e: Exception) {
                 coroutineContext.ensureActive()
-                Debug.log(bookSource.bookSourceUrl, "└${e.localizedMessage}", log)
+                DebugBridge.logFull(bookSource.bookSourceUrl, "└${e.localizedMessage}", log, 1)
             }
             coroutineContext.ensureActive()
-            Debug.log(bookSource.bookSourceUrl, "┌获取最新章节", log)
+            DebugBridge.logFull(bookSource.bookSourceUrl, "┌获取最新章节", log, 1)
             try {
                 searchBook.latestChapterTitle = analyzeRule.getString(ruleLastChapter)
-                Debug.log(bookSource.bookSourceUrl, "└${searchBook.latestChapterTitle}", log)
+                DebugBridge.logFull(
+                    bookSource.bookSourceUrl, "└${searchBook.latestChapterTitle}", log, 1
+                )
             } catch (e: Exception) {
                 coroutineContext.ensureActive()
-                Debug.log(bookSource.bookSourceUrl, "└${e.localizedMessage}", log)
+                DebugBridge.logFull(bookSource.bookSourceUrl, "└${e.localizedMessage}", log, 1)
             }
             coroutineContext.ensureActive()
-            Debug.log(bookSource.bookSourceUrl, "┌获取简介", log)
+            DebugBridge.logFull(bookSource.bookSourceUrl, "┌获取简介", log, 1)
             try {
                 searchBook.intro = HtmlFormatter.formatIntro(analyzeRule.getString(ruleIntro))
-                Debug.log(bookSource.bookSourceUrl, "└${searchBook.intro}", log)
+                DebugBridge.logFull(bookSource.bookSourceUrl, "└${searchBook.intro}", log, 1)
             } catch (e: Exception) {
                 coroutineContext.ensureActive()
-                Debug.log(bookSource.bookSourceUrl, "└${e.localizedMessage}", log)
+                DebugBridge.logFull(bookSource.bookSourceUrl, "└${e.localizedMessage}", log, 1)
             }
             coroutineContext.ensureActive()
-            Debug.log(bookSource.bookSourceUrl, "┌获取封面链接", log)
+            DebugBridge.logFull(bookSource.bookSourceUrl, "┌获取封面链接", log, 1)
             try {
                 analyzeRule.getString(ruleCoverUrl).let {
                     if (it.isNotEmpty()) {
                         searchBook.coverUrl = NetworkUtils.getAbsoluteURL(baseUrl, it)
                     }
                 }
-                Debug.log(bookSource.bookSourceUrl, "└${searchBook.coverUrl ?: ""}", log)
+                DebugBridge.logFull(
+                    bookSource.bookSourceUrl, "└${searchBook.coverUrl ?: ""}", log, 1
+                )
             } catch (e: Exception) {
                 coroutineContext.ensureActive()
-                Debug.log(bookSource.bookSourceUrl, "└${e.localizedMessage}", log)
+                DebugBridge.logFull(bookSource.bookSourceUrl, "└${e.localizedMessage}", log, 1)
             }
             coroutineContext.ensureActive()
-            Debug.log(bookSource.bookSourceUrl, "┌获取详情页链接", log)
+            DebugBridge.logFull(bookSource.bookSourceUrl, "┌获取详情页链接", log, 1)
             searchBook.bookUrl = analyzeRule.getString(ruleBookUrl, isUrl = true)
             if (searchBook.bookUrl.isEmpty()) {
                 searchBook.bookUrl = baseUrl
             }
-            Debug.log(bookSource.bookSourceUrl, "└${searchBook.bookUrl}", log)
+            DebugBridge.logFull(bookSource.bookSourceUrl, "└${searchBook.bookUrl}", log, 1)
             return searchBook
         }
         return null
-    }
-
-    private fun checkExploreJson(bookSource: BookSource) {
-        if (Debug.callback == null) {
-            return
-        }
-        val json = bookSource.exploreKindsJson()
-        if (json.isEmpty()) {
-            return
-        }
-        val kinds = GSONStrict.fromJsonArray<ExploreKind>(json).getOrNull()
-        if (kinds != null) {
-            return
-        }
-        GSON.fromJsonArray<ExploreKind>(json).getOrNull()?.let {
-            Debug.log("≡发现地址规则 JSON 格式不规范，请改为规范格式")
-        }
     }
 
 }

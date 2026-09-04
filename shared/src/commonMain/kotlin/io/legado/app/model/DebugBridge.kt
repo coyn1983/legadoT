@@ -12,4 +12,12 @@ object DebugBridge {
     /** 应用调试日志(AppLog.putDebug, tag 为源标签) */
     var putDebug: (tag: String?, msg: String) -> Unit = { _, _ -> }
 
+    /**
+     * 源调试日志全参版本(print/state 语义同 app Debug.log):
+     * webBook 迁入 shared 后, 解析日志需要 state(10/20/30/40 调试缓冲位)
+     * 与 print(并发页静默)参数。未接线时 no-op。
+     */
+    var logFull: (sourceUrl: String?, msg: String, print: Boolean, state: Int) -> Unit =
+        { _, _, _, _ -> }
+
 }

@@ -17,6 +17,7 @@ import io.legado.app.help.http.newCallResponseBody
 import io.legado.app.help.http.okHttpClient
 import io.legado.app.help.http.text
 import io.legado.app.model.webBook.WebBook
+import io.legado.app.model.webBook.preciseSearch
 import io.legado.app.utils.FileUtils
 import io.legado.app.utils.GSON
 import io.legado.app.utils.NetworkUtils
@@ -188,7 +189,7 @@ class BookshelfViewModel(application: Application) : BaseViewModel(application) 
                     return@forEach
                 }
                 semaphore.withPermit {
-                    WebBook.preciseSearch(
+                    preciseSearch(
                         this, bookSourceParts, name, author,
                         semaphore = semaphore
                     ).onSuccess { searchResult ->
