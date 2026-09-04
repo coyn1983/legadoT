@@ -32,6 +32,7 @@ kotlin {
             api(libs.commons.text)
             api(project(":icu4j"))
             api(project(":modules:rhino"))
+            api(project(":modules:book"))
             implementation(libs.androidx.collection)
         }
 

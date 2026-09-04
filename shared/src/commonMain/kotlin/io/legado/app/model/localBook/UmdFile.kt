@@ -2,8 +2,6 @@ package io.legado.app.model.localBook
 
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.utils.DebugLog
-import io.legado.app.utils.FileUtils
 import io.legado.app.utils.printOnDebug
 import me.ag2s.umdlib.domain.UmdBook
 import me.ag2s.umdlib.umd.UmdReader
@@ -64,7 +62,7 @@ class UmdFile(var book: Book) {
     }
 
     private fun readUmd(): UmdBook? {
-        val input = LocalBook.getBookInputStream(book)
+        val input = LocalBookBridge.getBookInputStream(book)
         return UmdReader().read(input)
     }
 
@@ -72,12 +70,13 @@ class UmdFile(var book: Book) {
         try {
             umdBook?.let {
                 if (book.coverUrl.isNullOrEmpty()) {
-                    book.coverUrl = LocalBook.getCoverPath(book)
+                    book.coverUrl = LocalBookBridge.getCoverPath(book)
                 }
                 if (fastCheck && File(book.coverUrl!!).exists()) {
                     return
                 }
-                FileUtils.writeBytes(book.coverUrl!!, it.cover.coverData)
+                /*封面字节经桥接交由 app 侧原样写盘*/
+                LocalBookBridge.writeCoverBytes(book.coverUrl!!, it.cover.coverData)
             }
         } catch (e: Exception) {
             e.printOnDebug()
@@ -110,7 +109,7 @@ class UmdFile(var book: Book) {
             chapter.index = index
             chapter.bookUrl = book.bookUrl
             chapter.url = index.toString()
-            DebugLog.d(javaClass.name, chapter.url)
+            LocalBookBridge.logDebug(javaClass.name, chapter.url)
             chapterList.add(chapter)
         }
         return chapterList

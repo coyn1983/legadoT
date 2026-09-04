@@ -1,23 +1,18 @@
 package io.legado.app.model.localBook
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.os.ParcelFileDescriptor
-import io.legado.app.constant.AppLog
+import io.legado.app.constant.SharedLog
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.help.book.BookHelp
 import io.legado.app.lib.mobi.KF6Book
 import io.legado.app.lib.mobi.KF8Book
 import io.legado.app.lib.mobi.MobiBook
 import io.legado.app.lib.mobi.MobiReader
 import io.legado.app.lib.mobi.entities.TOC
-import io.legado.app.utils.FileUtils
 import io.legado.app.utils.HtmlFormatter
 import io.legado.app.utils.printOnDebug
 import org.jsoup.Jsoup
+import java.io.Closeable
 import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStream
 
 class MobiFile(var book: Book) {
@@ -62,10 +57,13 @@ class MobiFile(var book: Book) {
         }
     }
 
-    private var fileDescriptor: ParcelFileDescriptor? = null
+    /**
+     *持有引用，避免被回收(app 侧为 ParcelFileDescriptor)
+     */
+    private var fileHandle: Closeable? = null
     private var mobiBook: MobiBook? = null
         get() {
-            if (field == null || fileDescriptor == null) {
+            if (field == null || fileHandle == null) {
                 field = readMobi()
             }
             return field
@@ -77,12 +75,12 @@ class MobiFile(var book: Book) {
 
     private fun readMobi(): MobiBook? {
         return kotlin.runCatching {
-            BookHelp.getBookPFD(book)?.let {
-                fileDescriptor = it
-                MobiReader().readMobi(it)
+            LocalBookBridge.openBookChannel(book)?.let {
+                fileHandle = it
+                MobiReader().readMobi(it.channel, it)
             }
         }.onFailure {
-            AppLog.put("读取Mobi文件失败\n${it.localizedMessage}", it)
+            SharedLog.put("读取Mobi文件失败\n${it.localizedMessage}", it)
             it.printOnDebug()
         }.getOrThrow()
     }
@@ -275,22 +273,18 @@ class MobiFile(var book: Book) {
         try {
             mobiBook?.let {
                 if (book.coverUrl.isNullOrEmpty()) {
-                    book.coverUrl = LocalBook.getCoverPath(book)
+                    book.coverUrl = LocalBookBridge.getCoverPath(book)
                 }
                 if (fastCheck && File(book.coverUrl!!).exists()) {
                     return
                 }
                 it.getCover()?.let { bytes ->
-                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                    val file = FileUtils.createFileIfNotExist(book.coverUrl!!)
-                    FileOutputStream(file).use { out ->
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
-                        out.flush()
-                    }
+                    /*封面字节经桥接交由 app 侧 BitmapFactory 解码重编码为 JPEG90*/
+                    LocalBookBridge.saveCoverJpeg(bytes, book.coverUrl!!)
                 }
             }
         } catch (e: Exception) {
-            AppLog.put("加载书籍封面失败\n${e.localizedMessage}", e)
+            SharedLog.put("加载书籍封面失败\n${e.localizedMessage}", e)
             e.printOnDebug()
         }
     }

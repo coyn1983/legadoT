@@ -219,10 +219,10 @@ class KF8Book(
             val tagMap = indexEntry.tagMap
             Fragment(
                 indexEntry.label.toInt(),
-                fragData.cncx[tagMap[2].tagValues[0]],
-                tagMap[4].tagValues[0],
-                tagMap[6].tagValues[0],
-                tagMap[6].tagValues[1]
+                fragData.cncx[tagMap[2]!!.tagValues[0]]!!,
+                tagMap[4]!!.tagValues[0],
+                tagMap[6]!!.tagValues[0],
+                tagMap[6]!!.tagValues[1]
             )
         }
     }
@@ -233,9 +233,9 @@ class KF8Book(
             Skeleton(
                 index,
                 indexEntry.label,
-                tagMap[1].tagValues[0],
-                tagMap[6].tagValues[0],
-                tagMap[6].tagValues[1],
+                tagMap[1]!!.tagValues[0],
+                tagMap[6]!!.tagValues[0],
+                tagMap[6]!!.tagValues[1],
             )
         }
     }

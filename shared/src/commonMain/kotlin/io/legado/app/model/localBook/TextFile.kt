@@ -1,13 +1,10 @@
 package io.legado.app.model.localBook
 
-import io.legado.app.constant.AppLog
-import io.legado.app.data.appDb
+import io.legado.app.constant.SharedLog
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.exception.EmptyFileException
-import io.legado.app.help.DefaultData
-import io.legado.app.help.book.isLocalModified
 import io.legado.app.utils.EncodingDetect
 import io.legado.app.utils.MD5Utils
 import io.legado.app.utils.StringUtils
@@ -29,7 +26,7 @@ class TextFile(private var book: Book) {
 
         @Synchronized
         private fun getTextFile(book: Book): TextFile {
-            if (textFile == null || textFile?.book?.bookUrl != book.bookUrl || book.isLocalModified()) {
+            if (textFile == null || textFile?.book?.bookUrl != book.bookUrl || LocalBookBridge.isLocalModified(book)) {
                 textFile = TextFile(book)
                 return textFile!!
             }
@@ -76,9 +73,9 @@ class TextFile(private var book: Book) {
      */
     @Throws(FileNotFoundException::class, SecurityException::class, EmptyFileException::class)
     fun getChapterList(): ArrayList<BookChapter> {
-        val modified = book.isLocalModified()
+        val modified = LocalBookBridge.isLocalModified(book)
         if (book.charset == null || book.tocUrl.isBlank() || modified) {
-            LocalBook.getBookInputStream(book).use { bis ->
+            LocalBookBridge.getBookInputStream(book).use { bis ->
                 val buffer = ByteArray(bufferSize)
                 val length = bis.read(buffer)
                 if (length == -1) throw EmptyFileException("Unexpected Empty Txt File")
@@ -106,7 +103,7 @@ class TextFile(private var book: Book) {
         val start = chapter.start!!
         val end = chapter.end!!
         if (txtBuffer == null || start > bufferEnd || end < bufferStart) {
-            LocalBook.getBookInputStream(book).use { bis ->
+            LocalBookBridge.getBookInputStream(book).use { bis ->
                 bufferStart = txtBufferSize * (start / txtBufferSize)
                 txtBuffer = ByteArray(min(txtBufferSize, bis.available() - bufferStart.toInt()))
                 bufferEnd = bufferStart + txtBuffer!!.size
@@ -121,7 +118,7 @@ class TextFile(private var book: Book) {
         @Suppress("ConvertTwoComparisonsToRangeCheck")
         if (start < bufferEnd && end > bufferEnd || start < bufferStart && end > bufferStart) {
             /** 章节内容在缓冲区交界处 */
-            LocalBook.getBookInputStream(book).use { bis ->
+            LocalBookBridge.getBookInputStream(book).use { bis ->
                 bis.skip(start)
                 bis.read(buffer)
             }
@@ -149,7 +146,7 @@ class TextFile(private var book: Book) {
         }
         val toc = arrayListOf<BookChapter>()
         var bookWordCount = 0
-        LocalBook.getBookInputStream(book).use { bis ->
+        LocalBookBridge.getBookInputStream(book).use { bis ->
             var blockContent: String
             //加载章节
             var curOffset: Long = 0
@@ -337,7 +334,7 @@ class TextFile(private var book: Book) {
     ): Pair<ArrayList<BookChapter>, Int> {
         val toc = arrayListOf<BookChapter>()
         var bookWordCount = 0
-        LocalBook.getBookInputStream(book).use { bis ->
+        LocalBookBridge.getBookInputStream(book).use { bis ->
             //block的个数
             var blockPos = 0
             //加载章节
@@ -441,7 +438,7 @@ class TextFile(private var book: Book) {
             val pattern = try {
                 tocRule.rule.toPattern(Pattern.MULTILINE)
             } catch (e: PatternSyntaxException) {
-                AppLog.put("TXT目录规则正则语法错误:${tocRule.name}\n$e", e)
+                SharedLog.put("TXT目录规则正则语法错误:${tocRule.name}\n$e", e)
                 continue
             }
             val matcher = pattern.matcher(content)
@@ -462,18 +459,10 @@ class TextFile(private var book: Book) {
     }
 
     /**
-     * 获取启用的目录规则
+     * 获取启用的目录规则(app appDb.txtTocRuleDao + DefaultData 经桥接)
      */
     private fun getTocRules(): List<TxtTocRule> {
-        var rules = appDb.txtTocRuleDao.enabled
-        if (appDb.txtTocRuleDao.count == 0) {
-            rules = DefaultData.txtTocRules.apply {
-                appDb.txtTocRuleDao.insert(*this.toTypedArray())
-            }.filter {
-                it.enable
-            }
-        }
-        return rules
+        return LocalBookBridge.getTxtTocRules()
     }
 
 }

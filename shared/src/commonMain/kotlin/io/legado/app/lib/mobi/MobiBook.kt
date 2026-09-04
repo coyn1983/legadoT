@@ -1,6 +1,5 @@
 package io.legado.app.lib.mobi
 
-import android.util.SparseArray
 import io.legado.app.lib.mobi.decompress.Decompressor
 import io.legado.app.lib.mobi.decompress.HuffcdicDecompressor
 import io.legado.app.lib.mobi.decompress.Lz77Decompressor
@@ -201,7 +200,7 @@ abstract class MobiBook(
                 index,
                 tagMap[1]?.tagValues?.getOrNull(0),
                 tagMap[2]?.tagValues?.getOrNull(0),
-                indexData.cncx[tagMap[3].tagValues[0]],
+                indexData.cncx[tagMap[3]!!.tagValues[0]]!!,
                 tagMap[4]?.tagValues?.getOrNull(0),
                 tagMap[6]?.tagValues,
                 tagMap[21]?.tagValues?.getOrNull(0),
@@ -314,7 +313,7 @@ abstract class MobiBook(
         }
 
         val tags = arrayListOf<IndexTag>()
-        val tagMap = SparseArray<IndexTag>()
+        val tagMap = HashMap<Int, IndexTag>()
 
         for (ptagx in ptagxs) {
             val values = arrayListOf<Int>()
@@ -369,8 +368,8 @@ abstract class MobiBook(
         return tags
     }
 
-    private fun readCncx(indxIndex: Int, indx: IndxHeader): SparseArray<String> {
-        val cncx = SparseArray<String>()
+    private fun readCncx(indxIndex: Int, indx: IndxHeader): HashMap<Int, String> {
+        val cncx = HashMap<Int, String>()
         var cncxRecordOffset = 0
         for (i in 0..<indx.numCncx) {
             val record = getRecord(indxIndex + indx.numRecords + i + 1)

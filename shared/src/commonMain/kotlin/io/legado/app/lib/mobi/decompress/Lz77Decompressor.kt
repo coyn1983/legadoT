@@ -1,10 +1,27 @@
 package io.legado.app.lib.mobi.decompress
 
-import androidx.core.util.Pools.SynchronizedPool
+/**
+ * 缓冲区复用池(替代 androidx SynchronizedPool, 容量 2, 语义一致)。
+ */
+private class SynchronizedByteArrayPool(private val maxPoolSize: Int) {
+
+    private val pool = ArrayList<ByteArray>(maxPoolSize)
+
+    @Synchronized
+    fun acquire(): ByteArray? = if (pool.isEmpty()) null else pool.removeAt(pool.size - 1)
+
+    @Synchronized
+    fun release(instance: ByteArray) {
+        if (pool.size < maxPoolSize) {
+            pool.add(instance)
+        }
+    }
+
+}
 
 class Lz77Decompressor(private val textRecordSize: Int) : Decompressor {
 
-    val pool = SynchronizedPool<ByteArray>(2)
+    private val pool = SynchronizedByteArrayPool(2)
 
     override fun decompress(data: ByteArray): ByteArray {
         val out = pool.acquire() ?: ByteArray(textRecordSize)

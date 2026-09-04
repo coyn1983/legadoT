@@ -1,15 +1,16 @@
 package io.legado.app.lib.mobi
 
-import android.os.ParcelFileDescriptor
 import io.legado.app.lib.mobi.utils.readString
 import io.legado.app.lib.mobi.utils.readUInt16
 import io.legado.app.lib.mobi.utils.readUInt32
-import java.io.FileInputStream
+import java.io.Closeable
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 
-class PDBFile(private val pfd: ParcelFileDescriptor) {
-    private val fc: FileChannel = FileInputStream(pfd.fileDescriptor).channel
+class PDBFile(
+    private val fc: FileChannel,
+    private val owner: Closeable? = null
+) {
     private val offsets: IntArray
     val name: String
     val type: String
@@ -43,7 +44,7 @@ class PDBFile(private val pfd: ParcelFileDescriptor) {
 
     fun close() {
         fc.close()
-        pfd.close()
+        owner?.close()
     }
 
 }

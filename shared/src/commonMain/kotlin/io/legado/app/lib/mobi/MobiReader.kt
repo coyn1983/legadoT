@@ -1,6 +1,5 @@
 package io.legado.app.lib.mobi
 
-import android.os.ParcelFileDescriptor
 import io.legado.app.lib.mobi.entities.ExthRecordType
 import io.legado.app.lib.mobi.entities.KF8Header
 import io.legado.app.lib.mobi.entities.MobiEntryHeaders
@@ -10,13 +9,15 @@ import io.legado.app.lib.mobi.utils.readString
 import io.legado.app.lib.mobi.utils.readUInt16
 import io.legado.app.lib.mobi.utils.readUInt32
 import io.legado.app.lib.mobi.utils.readUInt8
+import java.io.Closeable
 import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 import java.nio.charset.Charset
 
 class MobiReader {
 
-    fun readMobi(pfd: ParcelFileDescriptor): MobiBook {
-        val pdbFile = PDBFile(pfd)
+    fun readMobi(channel: FileChannel, owner: Closeable? = null): MobiBook {
+        val pdbFile = PDBFile(channel, owner)
         val record0 = pdbFile.getRecordData(0)
 
         var mobiEntryHeaders = readMobiEntryHeaders(record0)

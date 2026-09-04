@@ -70,6 +70,7 @@ import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.AnalyzeUrlAndroidDelegate
 import io.legado.app.model.analyzeRule.BackstageWebViewFetcher
 import io.legado.app.model.analyzeRule.WebBookPreUpdateHook
+import io.legado.app.model.localBook.LocalBookAndroidDelegate
 import io.legado.app.model.webBook.WebBookAndroidDelegate
 import io.legado.app.service.AutoTaskService
 import io.legado.app.ui.widget.dialog.CodeEditorWebViewPool
@@ -140,6 +141,8 @@ class App : Application() {
         AnalyzeUrl.webViewFetcher = BackstageWebViewFetcher
         //webBook 在线书籍模型(已迁入 shared)平台桥接
         WebBookAndroidDelegate.install()
+        //localBook 本地书解析器(已迁入 shared)平台桥接
+        LocalBookAndroidDelegate.install()
         CrashHandler(this)
         if (isDebuggable) {
             ThreadUtils.setThreadAssertsDisabledForTesting(true)

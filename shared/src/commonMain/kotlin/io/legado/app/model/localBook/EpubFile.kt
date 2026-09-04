@@ -1,14 +1,8 @@
 package io.legado.app.model.localBook
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.os.ParcelFileDescriptor
-import android.text.TextUtils
-import io.legado.app.constant.AppLog
+import io.legado.app.constant.SharedLog
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.help.book.BookHelp
-import io.legado.app.utils.FileUtils
 import io.legado.app.utils.HtmlFormatter
 import io.legado.app.utils.encodeURI
 import io.legado.app.utils.isXml
@@ -22,9 +16,8 @@ import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.parser.Parser
 import org.jsoup.select.Elements
+import java.io.Closeable
 import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.net.URI
@@ -79,19 +72,19 @@ class EpubFile(var book: Book) {
     private var mCharset: Charset = Charset.defaultCharset()
 
     /**
-     *持有引用，避免被回收
+     *持有引用，避免被回收(app 侧为 ParcelFileDescriptor)
      */
-    private var fileDescriptor: ParcelFileDescriptor? = null
+    private var fileHandle: Closeable? = null
     private var epubBook: EpubBook? = null
         get() {
-            if (field == null || fileDescriptor == null) {
+            if (field == null || fileHandle == null) {
                 field = readEpub()
             }
             return field
         }
     private var epubBookContents: List<Resource>? = null
         get() {
-            if (field == null || fileDescriptor == null) {
+            if (field == null || fileHandle == null) {
                 field = epubBook?.contents
             }
             return field
@@ -108,15 +101,15 @@ class EpubFile(var book: Book) {
         return kotlin.runCatching {
             //ContentScheme拷贝到私有文件夹采用懒加载防止OOM
             //val zipFile = BookHelp.getEpubFile(book)
-            BookHelp.getBookPFD(book)?.let {
-                fileDescriptor = it
-                val zipFile = AndroidZipFile(FileInputStream(it.fileDescriptor).channel, book.originName)
+            LocalBookBridge.openBookChannel(book)?.let {
+                fileHandle = it
+                val zipFile = AndroidZipFile(it.channel, book.originName)
                 EpubReader().readEpubLazy(zipFile, "utf-8")
             }
 
 
         }.onFailure {
-            AppLog.put("读取Epub文件失败\n${it.localizedMessage}", it)
+            SharedLog.put("读取Epub文件失败\n${it.localizedMessage}", it)
             it.printOnDebug()
         }.getOrThrow()
     }
@@ -260,22 +253,19 @@ class EpubFile(var book: Book) {
         try {
             epubBook?.let {
                 if (book.coverUrl.isNullOrEmpty()) {
-                    book.coverUrl = LocalBook.getCoverPath(book)
+                    book.coverUrl = LocalBookBridge.getCoverPath(book)
                 }
                 if (fastCheck && File(book.coverUrl!!).exists()) {
                     return
                 }
                 /*部分书籍DRM处理后，封面获取异常，待优化*/
                 it.coverImage?.inputStream?.use { input ->
-                    val cover = BitmapFactory.decodeStream(input)
-                    val out = FileOutputStream(FileUtils.createFileIfNotExist(book.coverUrl!!))
-                    cover.compress(Bitmap.CompressFormat.JPEG, 90, out)
-                    out.flush()
-                    out.close()
-                } ?: AppLog.putDebug("Epub: 封面获取为空. path: ${book.bookUrl}")
+                    /*封面字节经桥接交由 app 侧 BitmapFactory 解码重编码为 JPEG90*/
+                    LocalBookBridge.saveCoverJpeg(input.readBytes(), book.coverUrl!!)
+                } ?: LocalBookBridge.putDebug("Epub: 封面获取为空. path: ${book.bookUrl}")
             }
         } catch (e: Exception) {
-            AppLog.put("加载书籍封面失败\n${e.localizedMessage}", e)
+            SharedLog.put("加载书籍封面失败\n${e.localizedMessage}", e)
             e.printOnDebug()
         }
     }
@@ -313,14 +303,14 @@ class EpubFile(var book: Book) {
         epubBook?.let { eBook ->
             val refs = eBook.tableOfContents.tocReferences
             if (refs == null || refs.isEmpty()) {
-                AppLog.putDebug("Epub: NCX file parse error, check the file: ${book.bookUrl}")
+                LocalBookBridge.putDebug("Epub: NCX file parse error, check the file: ${book.bookUrl}")
                 val spineReferences = eBook.spine.spineReferences
                 var i = 0
                 val size = spineReferences.size
                 while (i < size) {
                     val resource = spineReferences[i].resource
                     var title = resource.title
-                    if (TextUtils.isEmpty(title)) {
+                    if (title.isNullOrEmpty()) {
                         try {
                             val doc =
                                 Jsoup.parse(String(resource.data, mCharset))
@@ -382,7 +372,7 @@ class EpubFile(var book: Book) {
             if (firstRef.completeHref.substringBeforeLast("#") == content.href) break
             val chapter = BookChapter()
             var title = content.title
-            if (TextUtils.isEmpty(title)) {
+            if (title.isNullOrEmpty()) {
                 val elements = Jsoup.parse(
                     String(epubBook!!.resources.getByHref(content.href).data, mCharset)
                 ).getElementsByTag("title")
@@ -433,7 +423,7 @@ class EpubFile(var book: Book) {
 
 
     protected fun finalize() {
-        fileDescriptor?.close()
+        fileHandle?.close()
     }
 
 }
