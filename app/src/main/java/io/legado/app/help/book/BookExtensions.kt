@@ -34,6 +34,9 @@ import java.time.Period.between
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 import kotlin.math.min
+import io.legado.app.data.entities.getDisplayTitle
+import io.legado.app.data.entities.getUseReplaceRule
+import io.legado.app.data.entities.save
 
 
 val Book.isAudio: Boolean

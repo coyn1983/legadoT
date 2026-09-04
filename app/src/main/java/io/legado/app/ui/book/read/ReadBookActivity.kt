@@ -165,6 +165,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.htmlunit.corejs.javascript.NativeArray
 import org.htmlunit.corejs.javascript.Scriptable
+import io.legado.app.data.entities.delete
+import io.legado.app.data.entities.getFileName
+import io.legado.app.data.entities.getUseReplaceRule
+import io.legado.app.data.entities.migrateTo
+import io.legado.app.data.entities.save
 
 /**
  * 阅读界面

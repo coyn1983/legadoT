@@ -1,6 +1,5 @@
 package io.legado.app.data.entities
 
-import io.legado.app.help.RuleBigDataHelp
 import io.legado.app.model.analyzeRule.RuleDataInterface
 import io.legado.app.utils.GSON
 
@@ -19,11 +18,11 @@ interface BaseRssArticle : RuleDataInterface {
     }
 
     override fun putBigVariable(key: String, value: String?) {
-        RuleBigDataHelp.putRssVariable(origin, link, key, value)
+        BigVariableStore.putRssVariable(origin, link, key, value)
     }
 
     override fun getBigVariable(key: String): String? {
-        return RuleBigDataHelp.getRssVariable(origin, link, key)
+        return BigVariableStore.getRssVariable(origin, link, key)
     }
 
 }

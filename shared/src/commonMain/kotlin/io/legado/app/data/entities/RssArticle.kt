@@ -5,7 +5,6 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonObject
-import kotlinx.parcelize.IgnoredOnParcel
 
 @Entity(
     tableName = "rssArticles",
@@ -36,7 +35,6 @@ data class RssArticle(
 
     @delegate:Transient
     @delegate:Ignore
-    @IgnoredOnParcel
     override val variableMap: HashMap<String, String> by lazy {
         GSON.fromJsonObject<HashMap<String, String>>(variable).getOrNull() ?: hashMapOf()
     }

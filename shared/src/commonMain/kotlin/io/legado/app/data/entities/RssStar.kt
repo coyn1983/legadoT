@@ -5,7 +5,6 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonObject
-import kotlinx.parcelize.IgnoredOnParcel
 
 
 @Entity(
@@ -29,7 +28,6 @@ data class RssStar(
 
     @delegate:Transient
     @delegate:Ignore
-    @IgnoredOnParcel
     override val variableMap by lazy {
         GSON.fromJsonObject<HashMap<String, String>>(variable).getOrNull() ?: hashMapOf()
     }

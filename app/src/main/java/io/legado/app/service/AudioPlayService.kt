@@ -60,6 +60,10 @@ import splitties.systemservices.powerManager
 import splitties.systemservices.wifiManager
 import java.io.File
 import kotlin.math.max
+import io.legado.app.data.entities.getAudioIntroMs
+import io.legado.app.data.entities.getAudioOutroMs
+import io.legado.app.data.entities.getAudioSkipEnabled
+import io.legado.app.data.entities.getAudioSkipMinDurationMs
 
 /**
  * 音频播放服务

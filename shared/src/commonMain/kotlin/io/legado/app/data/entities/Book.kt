@@ -1,6 +1,5 @@
 package io.legado.app.data.entities
 
-import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Ignore
@@ -10,26 +9,11 @@ import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import io.legado.app.constant.AppPattern
 import io.legado.app.constant.BookType
-import io.legado.app.constant.PageAnim
-import io.legado.app.data.appDb
-import io.legado.app.help.book.BookHelp
-import io.legado.app.help.book.ContentProcessor
-import io.legado.app.help.book.getFolderNameNoCache
-import io.legado.app.help.book.isEpub
-import io.legado.app.help.book.isImage
-import io.legado.app.help.book.simulatedTotalChapterNum
-import io.legado.app.help.config.AppConfig
-import io.legado.app.help.config.ReadBookConfig
-import io.legado.app.model.ReadBook
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonObject
-import kotlinx.parcelize.IgnoredOnParcel
-import kotlinx.parcelize.Parcelize
 import java.nio.charset.Charset
 import java.time.LocalDate
-import kotlin.math.max
 
-@Parcelize
 @TypeConverters(Book.Converters::class)
 @Entity(
     tableName = "books",
@@ -118,7 +102,7 @@ data class Book(
     //同步时间
     @ColumnInfo(defaultValue = "0")
     var syncTime: Long = 0L
-) : Parcelable, BaseBook {
+) : BaseBook {
 
     override fun equals(other: Any?): Boolean {
         if (other is Book) {
@@ -133,34 +117,26 @@ data class Book(
 
     @delegate:Transient
     @delegate:Ignore
-    @IgnoredOnParcel
     override val variableMap: HashMap<String, String> by lazy {
         GSON.fromJsonObject<HashMap<String, String>>(variable).getOrNull() ?: hashMapOf()
     }
 
     @Ignore
-    @IgnoredOnParcel
     override var infoHtml: String? = null
 
     @Ignore
-    @IgnoredOnParcel
     override var tocHtml: String? = null
 
     @Ignore
-    @IgnoredOnParcel
     var downloadUrls: List<String>? = null
 
     @Ignore
-    @IgnoredOnParcel
-    private var folderName: String? = null
+    var folderName: String? = null
 
     @get:Ignore
-    @IgnoredOnParcel
     val lastChapterIndex get() = totalChapterNum - 1
 
     fun getRealAuthor() = author.replace(AppPattern.authorRegex, "")
-
-    fun getUnreadChapterNum() = max(simulatedTotalChapterNum() - durChapterIndex - 1, 0)
 
     fun getDisplayCover() = if (customCoverUrl.isNullOrEmpty()) coverUrl else customCoverUrl
 
@@ -185,7 +161,6 @@ data class Book(
         return charset(charset ?: "UTF-8")
     }
 
-    @IgnoredOnParcel
     val config: ReadConfig
         get() {
             if (readConfig == null) {
@@ -206,18 +181,6 @@ data class Book(
         config.useReplaceRule = useReplaceRule
     }
 
-    fun getUseReplaceRule(): Boolean {
-        val useReplaceRule = config.useReplaceRule
-        if (useReplaceRule != null) {
-            return useReplaceRule
-        }
-        //图片类书源 epub本地 默认关闭净化
-        if (isImage || isEpub) {
-            return false
-        }
-        return AppConfig.replaceEnableDefault
-    }
-
     fun setReSegment(reSegment: Boolean) {
         config.reSegment = reSegment
     }
@@ -228,15 +191,6 @@ data class Book(
 
     fun setPageAnim(pageAnim: Int?) {
         config.pageAnim = pageAnim
-    }
-
-    fun getPageAnim(): Int {
-        var pageAnim = config.pageAnim
-            ?: if (isImage) PageAnim.scrollPageAnim else ReadBookConfig.pageAnim
-        if (pageAnim < 0) {
-            pageAnim = ReadBookConfig.pageAnim
-        }
-        return pageAnim
     }
 
     fun setImageStyle(imageStyle: String?) {
@@ -259,28 +213,12 @@ data class Book(
         config.audioSkipEnabled = enabled
     }
 
-    fun getAudioSkipEnabled(): Boolean {
-        return config.audioSkipEnabled ?: AppConfig.audioSkipEnabled
-    }
-
     fun setAudioIntroMs(value: Int?) {
         config.audioIntroMs = value?.coerceAtLeast(0)
     }
 
-    fun getAudioIntroMs(): Int {
-        return config.audioIntroMs ?: AppConfig.audioSkipIntroMs
-    }
-
     fun setAudioOutroMs(value: Int?) {
         config.audioOutroMs = value?.coerceAtLeast(0)
-    }
-
-    fun getAudioOutroMs(): Int {
-        return config.audioOutroMs ?: AppConfig.audioSkipOutroMs
-    }
-
-    fun getAudioSkipMinDurationMs(): Int {
-        return config.audioSkipMinDurationMs ?: AppConfig.audioSkipMinDurationMs
     }
 
     fun setAudioPlaySpeed(speed: Float?) {
@@ -359,77 +297,11 @@ data class Book(
         config.delTag = config.delTag and tag.inv()
     }
 
-    fun getFolderName(): String {
-        folderName?.let {
-            return it
-        }
-        //防止书名过长,只取9位
-        folderName = getFolderNameNoCache()
-        return folderName!!
-    }
-
-    fun toSearchBook() = SearchBook(
-        name = name,
-        author = author,
-        kind = kind,
-        bookUrl = bookUrl,
-        origin = origin,
-        originName = originName,
-        type = type,
-        wordCount = wordCount,
-        latestChapterTitle = latestChapterTitle,
-        coverUrl = coverUrl,
-        intro = intro,
-        tocUrl = tocUrl,
-        originOrder = originOrder,
-        variable = variable
-    ).apply {
-        this.infoHtml = this@Book.infoHtml
-        this.tocHtml = this@Book.tocHtml
-    }
-
-    /**
-     * 迁移旧的书籍的一些信息到新的书籍中
-     */
-    fun migrateTo(newBook: Book, toc: List<BookChapter>): Book {
-        newBook.durChapterIndex = BookHelp
-            .getDurChapter(durChapterIndex, durChapterTitle, toc, totalChapterNum)
-        newBook.durChapterTitle = toc[newBook.durChapterIndex].getDisplayTitle(
-            ContentProcessor.get(newBook.name, newBook.origin).getTitleReplaceRules(),
-            getUseReplaceRule()
-        )
-        newBook.durChapterPos = durChapterPos
-        newBook.durChapterTime = durChapterTime
-        newBook.group = group
-        newBook.order = order
-        newBook.customCoverUrl = customCoverUrl
-        newBook.customIntro = customIntro
-        newBook.customTag = customTag
-        newBook.canUpdate = canUpdate
-        newBook.readConfig = readConfig
-        return newBook
-    }
-
     fun createBookMark(): Bookmark {
         return Bookmark(
             bookName = name,
             bookAuthor = author,
         )
-    }
-
-    fun save() {
-        if (appDb.bookDao.has(bookUrl)) {
-            appDb.bookDao.update(this)
-        } else {
-            appDb.bookDao.insert(this)
-        }
-    }
-
-    fun delete() {
-        if (ReadBook.book?.bookUrl == bookUrl) {
-            ReadBook.book = null
-        }
-        appDb.bookDao.delete(this)
     }
 
     @Suppress("ConstPropertyName")
@@ -442,7 +314,6 @@ data class Book(
         const val imgStyleSingle = "SINGLE"
     }
 
-    @Parcelize
     data class ReadConfig(
         var reverseToc: Boolean = false,
         var pageAnim: Int? = null,
@@ -462,7 +333,7 @@ data class Book(
         var startDate: LocalDate? = null,
         var startChapter: Int? = null,     // 用户设置的起始章节
         var dailyChapters: Int = 3    // 用户设置的每日更新章节数
-    ) : Parcelable
+    )
 
     class Converters {
 

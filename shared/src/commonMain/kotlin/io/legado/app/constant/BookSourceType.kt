@@ -1,6 +1,5 @@
 package io.legado.app.constant
 
-import androidx.annotation.IntDef
 
 @Suppress("ConstPropertyName")
 object BookSourceType {
@@ -12,7 +11,6 @@ object BookSourceType {
 
     @Target(AnnotationTarget.VALUE_PARAMETER)
     @Retention(AnnotationRetention.SOURCE)
-    @IntDef(default, audio, image, file)
     annotation class Type
 
 }

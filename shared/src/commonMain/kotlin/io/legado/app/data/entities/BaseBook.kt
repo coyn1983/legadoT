@@ -1,6 +1,5 @@
 package io.legado.app.data.entities
 
-import io.legado.app.help.RuleBigDataHelp
 import io.legado.app.model.analyzeRule.RuleDataInterface
 import io.legado.app.utils.GSON
 import io.legado.app.utils.splitNotBlank
@@ -32,11 +31,11 @@ interface BaseBook : RuleDataInterface {
     }
 
     override fun putBigVariable(key: String, value: String?) {
-        RuleBigDataHelp.putBookVariable(bookUrl, key, value)
+        BigVariableStore.putBookVariable(bookUrl, key, value)
     }
 
     override fun getBigVariable(key: String): String? {
-        return RuleBigDataHelp.getBookVariable(bookUrl, key)
+        return BigVariableStore.getBookVariable(bookUrl, key)
     }
 
     fun getKindList(): List<String> {

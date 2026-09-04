@@ -1,6 +1,5 @@
 package io.legado.app.constant
 
-import androidx.annotation.IntDef
 
 @Suppress("ConstPropertyName")
 object PageAnim {
@@ -17,7 +16,6 @@ object PageAnim {
 
     @Target(AnnotationTarget.VALUE_PARAMETER)
     @Retention(AnnotationRetention.SOURCE)
-    @IntDef(coverPageAnim, slidePageAnim, simulationPageAnim, scrollPageAnim, noAnim)
     annotation class Anim
 
 }

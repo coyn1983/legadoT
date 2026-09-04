@@ -1,12 +1,9 @@
 package io.legado.app.data.entities
 
-import android.os.Parcelable
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import kotlinx.parcelize.Parcelize
 
-@Parcelize
 @Entity(
     tableName = "bookmarks",
     indices = [(Index(value = ["bookName", "bookAuthor"], unique = false))]
@@ -21,4 +18,4 @@ data class Bookmark(
     var chapterName: String = "",
     var bookText: String = "",
     var content: String = ""
-) : Parcelable
+)

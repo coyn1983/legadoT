@@ -21,6 +21,7 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
             implementation(libs.kotlinx.coroutines.core)
+            api(libs.room.common)
             api(libs.gson)
             api(libs.jsoup)
             api(libs.jsoupxpath)

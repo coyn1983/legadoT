@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 import java.util.LinkedList
 import java.util.regex.Matcher
 import kotlin.math.roundToInt
+import io.legado.app.data.entities.getPageAnim
 
 class TextChapterLayout(
     scope: CoroutineScope,

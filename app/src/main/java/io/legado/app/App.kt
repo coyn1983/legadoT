@@ -23,6 +23,7 @@ import io.legado.app.constant.AppLog
 import io.legado.app.constant.PreferKey
 import io.legado.app.constant.SharedLog
 import io.legado.app.data.appDb
+import io.legado.app.data.entities.BigVariableStore
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
@@ -77,6 +78,12 @@ class App : Application() {
         super.onCreate()
         SharedLog.isDebug = BuildConfig.DEBUG
         SharedLog.put = { message, throwable -> AppLog.put(message, throwable) }
+        BigVariableStore.putBookVariable = RuleBigDataHelp::putBookVariable
+        BigVariableStore.getBookVariable = RuleBigDataHelp::getBookVariable
+        BigVariableStore.putChapterVariable = RuleBigDataHelp::putChapterVariable
+        BigVariableStore.getChapterVariable = RuleBigDataHelp::getChapterVariable
+        BigVariableStore.putRssVariable = RuleBigDataHelp::putRssVariable
+        BigVariableStore.getRssVariable = RuleBigDataHelp::getRssVariable
         CrashHandler(this)
         if (isDebuggable) {
             ThreadUtils.setThreadAssertsDisabledForTesting(true)

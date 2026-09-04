@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.flow
 import org.htmlunit.corejs.javascript.Context
 import splitties.init.appCtx
 import kotlin.coroutines.coroutineContext
+import io.legado.app.data.entities.getDisplayTitle
+import io.legado.app.data.entities.getFileName
+import io.legado.app.data.entities.getUseReplaceRule
 
 /**
  * 获取目录

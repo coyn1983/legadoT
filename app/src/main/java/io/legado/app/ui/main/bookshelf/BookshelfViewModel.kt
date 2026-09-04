@@ -30,6 +30,8 @@ import kotlinx.coroutines.sync.withPermit
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
+import io.legado.app.data.entities.migrateTo
+import io.legado.app.data.entities.save
 
 class BookshelfViewModel(application: Application) : BaseViewModel(application) {
     val addBookProgressLiveData = MutableLiveData(-1)
