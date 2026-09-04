@@ -1,6 +1,5 @@
 package io.legado.app.help.crypto
 
-import androidx.annotation.Keep
 import java.io.InputStream
 import java.security.KeyFactory
 import java.security.PrivateKey
@@ -9,7 +8,6 @@ import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 
-@Keep
 @Suppress("unused")
 class Sign(private val algorithm: String) {
 

@@ -17,7 +17,7 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.help.CacheManager
 import io.legado.app.help.ConcurrentRateLimiter
-import io.legado.app.help.JsExtensions
+import io.legado.app.help.JsExtensionsAndroid
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.exoplayer.ExoPlayerHelper
 import io.legado.app.help.glide.GlideHeaders
@@ -91,7 +91,7 @@ class AnalyzeUrl(
     private var coroutineContext: CoroutineContext = EmptyCoroutineContext,
     headerMapF: Map<String, String>? = null,
     hasLoginHeader: Boolean = true
-) : JsExtensions {
+) : JsExtensionsAndroid {
 
     var ruleUrl = ""
         private set

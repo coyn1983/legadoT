@@ -14,7 +14,7 @@ import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.RssArticle
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.CacheManager
-import io.legado.app.help.JsExtensions
+import io.legado.app.help.JsExtensionsAndroid
 import io.legado.app.help.http.CookieStore
 import io.legado.app.help.source.getShareScope
 import io.legado.app.model.SharedJsScope
@@ -56,7 +56,7 @@ class AnalyzeRule(
     private var ruleData: RuleDataInterface? = null,
     private val source: BaseSource? = null,
     private val preUpdateJs: Boolean = false
-) : JsExtensions {
+) : JsExtensionsAndroid {
 
     private val book get() = ruleData as? BaseBook
     private val rssArticle get() = ruleData as? RssArticle

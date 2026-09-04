@@ -1,6 +1,5 @@
 package io.legado.app.help.crypto
 
-import androidx.annotation.Keep
 import java.io.InputStream
 import java.security.Key
 import java.security.KeyFactory
@@ -12,7 +11,6 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
 
-@Keep
 @Suppress("unused")
 class AsymmetricCrypto(private val algorithm: String) {
 

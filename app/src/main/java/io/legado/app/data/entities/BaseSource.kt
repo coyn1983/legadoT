@@ -10,7 +10,7 @@ import io.legado.app.constant.androidId
 import io.legado.app.data.entities.rule.RowUi
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.CacheManager
-import io.legado.app.help.JsExtensions
+import io.legado.app.help.JsExtensionsAndroid
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.crypto.SymmetricCryptoAndroid
 import io.legado.app.help.http.CookieStore
@@ -32,7 +32,7 @@ import kotlin.coroutines.CoroutineContext
  * 可在js里调用,source.xxx()
  */
 @Suppress("unused")
-interface BaseSource : JsExtensions {
+interface BaseSource : JsExtensionsAndroid {
     /**
      * 并发率
      */

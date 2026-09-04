@@ -1,6 +1,5 @@
 package io.legado.app.help.crypto
 
-import androidx.annotation.Keep
 import io.legado.app.utils.isHex
 import java.io.InputStream
 import java.nio.charset.Charset
@@ -9,7 +8,6 @@ import javax.crypto.KeyGenerator
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-@Keep
 open class SymmetricCryptoAndroid(
     private val algorithm: String,
     key: ByteArray?,

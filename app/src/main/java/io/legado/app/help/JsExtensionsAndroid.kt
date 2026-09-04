@@ -7,15 +7,12 @@ import androidx.core.net.toUri
 import com.script.rhino.rhinoContext
 import com.script.rhino.rhinoContextOrNull
 import io.legado.app.constant.AppConst
-import io.legado.app.constant.AppConst.dateFormat
 import io.legado.app.constant.AppLog
-import io.legado.app.constant.AppPattern
 import io.legado.app.constant.EventBus
 import io.legado.app.constant.androidId
 import io.legado.app.data.entities.BaseSource
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.config.AppConfig
-import io.legado.app.help.crypto.base64ToByteArray
 import io.legado.app.help.crypto.hexToByteArray
 import io.legado.app.help.crypto.toHexString
 import io.legado.app.help.http.BackstageWebView
@@ -33,14 +30,12 @@ import io.legado.app.ui.association.OpenUrlConfirmActivity
 import io.legado.app.ui.widget.dialog.BottomWebViewDialog
 import io.legado.app.utils.ArchiveUtils
 import io.legado.app.utils.ChineseUtils
-import io.legado.app.utils.EncoderUtils
 import io.legado.app.utils.EncodingDetect
 import io.legado.app.utils.FileUtils
 import io.legado.app.utils.GSON
 import io.legado.app.utils.HtmlFormatter
 import io.legado.app.utils.JsURL
 import io.legado.app.utils.MD5Utils
-import io.legado.app.utils.StringUtils
 import io.legado.app.utils.UrlUtil
 import io.legado.app.utils.compress.LibArchiveUtils
 import io.legado.app.utils.createFileReplace
@@ -70,14 +65,8 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.URL
-import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.security.MessageDigest
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.SimpleTimeZone
-import java.util.UUID
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import kotlin.coroutines.CoroutineContext
@@ -91,7 +80,7 @@ import kotlin.coroutines.EmptyCoroutineContext
  */
 @Keep
 @Suppress("unused")
-interface JsExtensions : JsEncodeUtils {
+interface JsExtensionsAndroid : JsExtensions, JsEncodeUtilsAndroid {
 
     fun getSource(): BaseSource?
 
@@ -474,110 +463,6 @@ interface JsExtensions : JsEncodeUtils {
         return post(urlStr, body, headerMap)
     }
 
-    /* Str转ByteArray */
-    fun strToBytes(str: String): ByteArray {
-        return str.toByteArray(charset("UTF-8"))
-    }
-
-    fun strToBytes(str: String, charset: String): ByteArray {
-        return str.toByteArray(charset(charset))
-    }
-
-    /* ByteArray转Str */
-    fun bytesToStr(bytes: ByteArray): String {
-        return String(bytes, charset("UTF-8"))
-    }
-
-    fun bytesToStr(bytes: ByteArray, charset: String): String {
-        return String(bytes, charset(charset))
-    }
-
-    /**
-     * js实现base64解码,不能删
-     */
-    fun base64Decode(str: String?): String? {
-        return str?.let { String(it.base64ToByteArray()) }
-    }
-
-    fun base64Decode(str: String?, charset: String): String? {
-        return str?.let { String(it.base64ToByteArray(), charset(charset)) }
-    }
-
-    fun base64Decode(str: String, flags: Int): String {
-        return EncoderUtils.base64Decode(str, flags)
-    }
-
-    fun base64DecodeToByteArray(str: String?): ByteArray? {
-        if (str.isNullOrBlank()) {
-            return null
-        }
-        return EncoderUtils.base64DecodeToByteArray(str, 0)
-    }
-
-    fun base64DecodeToByteArray(str: String?, flags: Int): ByteArray? {
-        if (str.isNullOrBlank()) {
-            return null
-        }
-        return EncoderUtils.base64DecodeToByteArray(str, flags)
-    }
-
-    fun base64Encode(str: String): String? {
-        return EncoderUtils.base64Encode(str, 2)
-    }
-
-    fun base64Encode(str: String, flags: Int): String? {
-        return EncoderUtils.base64Encode(str, flags)
-    }
-
-    /* HexString 解码为字节数组 */
-    fun hexDecodeToByteArray(hex: String?): ByteArray? {
-        return hex?.takeIf(String::isNotEmpty)?.hexToByteArray()
-    }
-
-    /* hexString 解码为utf8String*/
-    fun hexDecodeToString(hex: String?): String? {
-        return hex?.takeIf(String::isNotEmpty)?.let { String(it.hexToByteArray(), Charsets.UTF_8) }
-    }
-
-    /* utf8 编码为hexString */
-    fun hexEncodeToString(utf8: String?): String? {
-        return utf8?.toByteArray()?.toHexString()
-    }
-
-    /**
-     * 格式化时间
-     */
-    fun timeFormatUTC(time: Long, format: String, sh: Int): String? {
-        val utc = SimpleTimeZone(sh, "UTC")
-        return SimpleDateFormat(format, Locale.getDefault()).run {
-            timeZone = utc
-            format(Date(time))
-        }
-    }
-
-    /**
-     * 时间格式化
-     */
-    fun timeFormat(time: Long): String {
-        return dateFormat.format(Date(time))
-    }
-
-    fun encodeURI(str: String): String {
-        return try {
-            URLEncoder.encode(str, "UTF-8")
-        } catch (e: Exception) {
-            ""
-        }
-    }
-
-    fun encodeURI(str: String, enc: String): String {
-        return try {
-            URLEncoder.encode(str, enc)
-        } catch (e: Exception) {
-            ""
-        }
-    }
-
     fun htmlFormat(str: String): String {
         return HtmlFormatter.formatKeepImg(str)
     }
@@ -954,20 +839,6 @@ interface JsExtensions : JsEncodeUtils {
     }
 
 
-    /**
-     * 章节数转数字
-     */
-    fun toNumChapter(s: String?): String? {
-        s ?: return null
-        val matcher = AppPattern.titleNumPattern.matcher(s)
-        if (matcher.find()) {
-            val intStr = StringUtils.stringToInt(matcher.group(2))
-            return "${matcher.group(1)}${intStr}${matcher.group(3)}"
-        }
-        return s
-    }
-
-
     fun toURL(urlStr: String): JsURL {
         return JsURL(urlStr)
     }
@@ -1014,13 +885,6 @@ interface JsExtensions : JsEncodeUtils {
         } else {
             log(any.javaClass.name)
         }
-    }
-
-    /**
-     * 生成UUID
-     */
-    fun randomUUID(): String {
-        return UUID.randomUUID().toString()
     }
 
     fun androidId(): String {
