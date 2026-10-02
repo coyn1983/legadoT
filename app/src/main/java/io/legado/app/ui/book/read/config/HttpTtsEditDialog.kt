@@ -367,7 +367,7 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
             viewModel.loadVoices { voices ->
                 context?.selector(
                     getString(R.string.speak_engine_voice),
-                    voices.map { SelectItem(it.friendlyName, it.shortName) }
+                    voices.map { SelectItem(it.displayName, it.shortName) }
                 ) { _, item, _ ->
                     voiceField.codeView.setText(item.value)
                 }

@@ -106,6 +106,24 @@ object EdgeTtsClient {
         val friendlyName: String
     ) {
         val isChinese: Boolean get() = locale.startsWith("zh")
+
+        /**
+         * 选择器里展示的一行, 例如 "晓晓 · zh-CN · 女"。
+         * 中文音色用惯用中文名, 其余退回接口给的英文名
+         */
+        val displayName: String
+            get() {
+                val genderLabel = when {
+                    gender.startsWith("Female", ignoreCase = true) -> "女"
+                    gender.startsWith("Male", ignoreCase = true) -> "男"
+                    else -> null
+                }
+                return listOfNotNull(
+                    ZH_VOICE_NAMES[shortName] ?: shortLabel(friendlyName),
+                    locale.ifBlank { null },
+                    genderLabel
+                ).joinToString(" · ")
+            }
     }
 
     /**
@@ -389,3 +407,33 @@ object EdgeTtsClient {
 
     private val VOICE_NAME_REGEX = Regex("^[A-Za-z0-9.\\-]+$")
 }
+
+/**
+ * 微软中文音色的惯用中文名(接口只给英文 FriendlyName)。
+ * 微软日后新增音色时这里查不到会自动退回英文名, 无需同步维护。
+ */
+private val ZH_VOICE_NAMES = mapOf(
+    "zh-CN-XiaoxiaoNeural" to "晓晓",
+    "zh-CN-XiaoyiNeural" to "晓伊",
+    "zh-CN-YunjianNeural" to "云健",
+    "zh-CN-YunxiNeural" to "云希",
+    "zh-CN-YunxiaNeural" to "云夏",
+    "zh-CN-YunyangNeural" to "云扬",
+    "zh-CN-liaoning-XiaobeiNeural" to "晓北",
+    "zh-CN-shaanxi-XiaoniNeural" to "晓妮",
+    "zh-HK-HiuGaaiNeural" to "晓佳",
+    "zh-HK-HiuMaanNeural" to "晓曼",
+    "zh-HK-WanLungNeural" to "云龙",
+    "zh-TW-HsiaoChenNeural" to "晓臻",
+    "zh-TW-HsiaoYuNeural" to "晓雨",
+    "zh-TW-YunJheNeural" to "云哲"
+)
+
+/**
+ * "Microsoft Xiaoyi Online (Natural)" -> "Xiaoyi"
+ */
+private fun shortLabel(friendlyName: String): String =
+    friendlyName.removePrefix("Microsoft ")
+        .substringBefore(" Online")
+        .trim()
+        .ifBlank { friendlyName }

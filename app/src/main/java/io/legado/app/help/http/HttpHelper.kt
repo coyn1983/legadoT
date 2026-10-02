@@ -405,8 +405,12 @@ val okHttpClient: OkHttpClient by lazy {
             } else if (request.header(AppConst.UA_NAME) == "null") {
                 builder.removeHeader(AppConst.UA_NAME)
             }
-            builder.addHeader("Keep-Alive", "300")
-            builder.addHeader("Connection", "Keep-Alive")
+            // addHeader 是追加而非替换: WebSocket 升级请求已带 "Connection: Upgrade",
+            // 再追加 Keep-Alive 会让握手失败(okhttp: Web Socket socket missing)
+            if (request.header("Upgrade") == null) {
+                builder.addHeader("Keep-Alive", "300")
+                builder.addHeader("Connection", "Keep-Alive")
+            }
             builder.addHeader("Cache-Control", "no-cache")
             chain.proceed(builder.build())
         }
