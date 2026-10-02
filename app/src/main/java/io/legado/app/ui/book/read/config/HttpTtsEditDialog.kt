@@ -13,7 +13,10 @@ import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.entities.HttpTTS
 import io.legado.app.databinding.DialogHttpTtsEditBinding
 import io.legado.app.databinding.ViewCodeEditFieldBinding
+import io.legado.app.help.tts.EdgeTtsClient
+import io.legado.app.lib.dialogs.SelectItem
 import io.legado.app.lib.dialogs.alert
+import io.legado.app.lib.dialogs.selector
 import io.legado.app.ui.about.AppLogDialog
 import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.widget.code.CodeView
@@ -24,6 +27,7 @@ import io.legado.app.ui.widget.code.bindCodeEditField
 import io.legado.app.ui.widget.dialog.WebCodeDialog
 import io.legado.app.utils.GSON
 import io.legado.app.utils.applyTint
+import io.legado.app.utils.gone
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.showDialogFragment
@@ -48,6 +52,7 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
     private var bypassDismissCheck = false
     private val webEditRequests = linkedMapOf<String, CodeView>()
     private lateinit var urlField: CodeField
+    private lateinit var voiceField: CodeField
     private lateinit var contentTypeField: CodeField
     private lateinit var concurrentRateField: CodeField
     private lateinit var loginUrlField: CodeField
@@ -58,6 +63,8 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
 
     private data class HttpTtsDraft(
         val name: String,
+        val engineType: String,
+        val voice: String,
         val url: String,
         val contentType: String,
         val concurrentRate: String,
@@ -97,6 +104,9 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
         view.setOnClickListener(null)
         initCodeFields()
         urlField.textInputLayout.hint = "url"
+        voiceField.textInputLayout.hint = getString(R.string.speak_engine_voice)
+        // 音色用「选择音色」按钮挑选, 不需要整段代码编辑器
+        voiceField.btnWebEdit.gone()
         contentTypeField.textInputLayout.hint = "Content-Type"
         concurrentRateField.textInputLayout.hint = getString(R.string.concurrent_rate)
         loginUrlField.textInputLayout.hint = getString(R.string.login_url)
@@ -124,6 +134,8 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
             addJsPattern()
         }
         initWebCodeEditorEntrances()
+        initEngineType()
+        initVoicePicker()
         viewModel.initData(arguments) {
             initView(httpTTS = it)
             rememberInitialDraft()
@@ -142,6 +154,10 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
 
     fun initView(httpTTS: HttpTTS) {
         binding.tvName.setText(httpTTS.name)
+        binding.chipEngineHttp.isChecked = !httpTTS.isEdgeEngine
+        binding.chipEngineEdge.isChecked = httpTTS.isEdgeEngine
+        voiceField.codeView.setText(httpTTS.voice)
+        applyEngineType(httpTTS.isEdgeEngine)
         urlField.codeView.setText(httpTTS.url)
         contentTypeField.codeView.setText(httpTTS.contentType)
         concurrentRateField.codeView.setText(httpTTS.concurrentRate)
@@ -196,6 +212,8 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
         return HttpTTS(
             id = viewModel.id ?: System.currentTimeMillis(),
             name = binding.tvName.text.toString(),
+            engineType = currentEngineType(),
+            voice = voiceField.codeView.text?.toString()?.takeIf { it.isNotBlank() },
             url = urlField.codeView.text.toString(),
             contentType = contentTypeField.codeView.text?.toString(),
             concurrentRate = concurrentRateField.codeView.text?.toString(),
@@ -212,6 +230,8 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
     private fun currentDraft(): HttpTtsDraft {
         return HttpTtsDraft(
             name = binding.tvName.text?.toString().orEmpty(),
+            engineType = currentEngineType(),
+            voice = voiceField.codeView.text?.toString().orEmpty(),
             url = urlField.codeView.text?.toString().orEmpty(),
             contentType = contentTypeField.codeView.text?.toString().orEmpty(),
             concurrentRate = concurrentRateField.codeView.text?.toString().orEmpty(),
@@ -301,8 +321,63 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
         bindWebEditor(jsLibField.codeView, jsLibField.btnWebEdit, "jsLib")
     }
 
+    private fun currentEngineType(): String {
+        return if (binding.chipEngineEdge.isChecked) HttpTTS.ENGINE_EDGE else HttpTTS.ENGINE_HTTP
+    }
+
+    private fun initEngineType() {
+        binding.chipEngineHttp.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) applyEngineType(isEdge = false)
+        }
+        binding.chipEngineEdge.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) applyEngineType(isEdge = true)
+        }
+    }
+
+    /**
+     * Edge 引擎由内置协议合成, url/登录/请求头等字段对它没有意义, 直接隐藏
+     */
+    private fun applyEngineType(isEdge: Boolean) {
+        val httpOnlyIds = intArrayOf(
+            R.id.field_url,
+            R.id.field_content_type,
+            R.id.field_login_url,
+            R.id.field_login_ui,
+            R.id.field_login_check_js,
+            R.id.field_headers,
+            R.id.field_js_lib,
+            R.id.cb_is_enable_cookie
+        )
+        httpOnlyIds.forEach { id ->
+            binding.root.findViewById<View>(id)?.visibility =
+                if (isEdge) View.GONE else View.VISIBLE
+        }
+        val edgeOnlyIds = intArrayOf(R.id.field_voice, R.id.chip_pick_voice)
+        edgeOnlyIds.forEach { id ->
+            binding.root.findViewById<View>(id)?.visibility =
+                if (isEdge) View.VISIBLE else View.GONE
+        }
+        if (isEdge && voiceField.codeView.text.isNullOrBlank()) {
+            voiceField.codeView.setText(EdgeTtsClient.DEFAULT_VOICE)
+        }
+    }
+
+    private fun initVoicePicker() {
+        binding.chipPickVoice.setOnClickListener {
+            viewModel.loadVoices { voices ->
+                context?.selector(
+                    getString(R.string.speak_engine_voice),
+                    voices.map { SelectItem(it.friendlyName, it.shortName) }
+                ) { _, item, _ ->
+                    voiceField.codeView.setText(item.value)
+                }
+            }
+        }
+    }
+
     private fun initCodeFields() {
         urlField = resolveCodeField(R.id.field_url)
+        voiceField = resolveCodeField(R.id.field_voice)
         contentTypeField = resolveCodeField(R.id.field_content_type)
         concurrentRateField = resolveCodeField(R.id.field_concurrent_rate)
         loginUrlField = resolveCodeField(R.id.field_login_url)

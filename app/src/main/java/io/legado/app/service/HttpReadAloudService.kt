@@ -30,6 +30,7 @@ import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.exoplayer.InputStreamDataSource
+import io.legado.app.help.tts.EdgeTtsClient
 import io.legado.app.model.ReadAloud
 import io.legado.app.model.ReadBook
 import io.legado.app.model.analyzeRule.AnalyzeUrl
@@ -53,6 +54,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.Response
 import org.htmlunit.corejs.javascript.WrappedException
 import splitties.init.appCtx
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
 import java.net.ConnectException
@@ -89,6 +91,7 @@ class HttpReadAloudService : BaseReadAloudService(),
         CustomLoadErrorHandlingPolicy()
     }
     private var speechRate: Int = AppConfig.speechRatePlay + 5
+    private val edgeRetryTimes = 3
     private var downloadTask: Coroutine<*>? = null
     private var playIndexJob: Job? = null
     private var downloadErrorNo: Int = 0
@@ -328,6 +331,9 @@ class HttpReadAloudService : BaseReadAloudService(),
         httpTts: HttpTTS,
         speakText: String
     ): InputStream? {
+        if (httpTts.isEdgeEngine) {
+            return getEdgeSpeakStream(httpTts, speakText)
+        }
         while (true) {
             try {
                 val analyzeUrl = AnalyzeUrl(
@@ -400,13 +406,44 @@ class HttpReadAloudService : BaseReadAloudService(),
         return null
     }
 
+    /**
+     * 内置 Edge 朗读引擎: 直接合成 mp3 字节, 不走 url 规则
+     */
+    private suspend fun getEdgeSpeakStream(
+        httpTts: HttpTTS,
+        speakText: String
+    ): InputStream {
+        while (true) {
+            try {
+                val audio = EdgeTtsClient.synthesize(
+                    text = speakText,
+                    voice = httpTts.voice,
+                    speakSpeed = speechRate
+                )
+                downloadErrorNo = 0
+                return ByteArrayInputStream(audio)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                downloadErrorNo++
+                AppLog.put("Edge朗读出错\n${e.localizedMessage}", e)
+                if (downloadErrorNo > edgeRetryTimes) {
+                    AppLog.put("Edge朗读连续$edgeRetryTimes 次错误，已暂停阅读。", e, true)
+                    throw e
+                }
+                delay(500L * downloadErrorNo)
+            }
+        }
+    }
+
     private fun md5SpeakFileName(content: String, textChapter: TextChapter? = this.textChapter): String {
         val tts = ReadAloud.httpTTS
         val sourceVariable = tts?.getVariable().orEmpty()
         val loginHeader = tts?.getLoginHeader().orEmpty()
         return MD5Utils.md5Encode16(textChapter?.title ?: "") + "_" +
                 MD5Utils.md5Encode16(
-                    "${tts?.url}-|-$speechRate-|-$sourceVariable-|-$loginHeader-|-$content"
+                    "${tts?.engineType}-|-$tts?.voice-|-$tts?.url-|-$speechRate-|-" +
+                        "$sourceVariable-|-$loginHeader-|-$content"
                 )
     }
 

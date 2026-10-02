@@ -51,6 +51,65 @@
 
                 </io.legado.app.ui.widget.text.TextInputLayout>
 
+                <!--引擎类型-->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_s"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/speak_engine_type"
+                        android:textColor="@color/primaryText"
+                        app:skin_textColor="onSurface"
+                        tools:ignore="RtlHardcoded" />
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/cg_engine_type"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_m"
+                        app:selectionRequired="true"
+                        app:singleLine="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_engine_http"
+                            style="@style/Widget.App.Chip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:text="@string/speak_engine_type_http" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_engine_edge"
+                            style="@style/Widget.App.Chip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/speak_engine_type_edge" />
+
+                    </com.google.android.material.chip.ChipGroup>
+
+                </LinearLayout>
+
+                <include
+                    android:id="@+id/field_voice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_m"
+                    layout="@layout/view_code_edit_field" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_pick_voice"
+                    style="@style/Widget.App.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:text="@string/speak_engine_pick_voice" />
+
                 <include
                     android:id="@+id/field_url"
                     android:layout_width="match_parent"

@@ -838,6 +838,11 @@ Placeholders:
     <string name="brightness_auto">Auto-Brightness %s</string>
     <string name="read_aloud_by_page">Speak by pages</string>
     <string name="speak_engine">Speak Engine</string>
+    <string name="speak_engine_type">Engine type</string>
+    <string name="speak_engine_type_http">Online HTTP</string>
+    <string name="speak_engine_type_edge">Microsoft Edge (free)</string>
+    <string name="speak_engine_voice">Voice (voice)</string>
+    <string name="speak_engine_pick_voice">Pick voice</string>
     <string name="bg_image">Background images</string>
     <string name="bg_color">Background color</string>
     <string name="text_color">Text color</string>

@@ -787,6 +787,11 @@ Cron 使用 5 个字段：**分 时 日 月 周**
     <string name="brightness_auto">自动亮度 %s</string>
     <string name="read_aloud_by_page">按页朗读</string>
     <string name="speak_engine">朗读引擎</string>
+    <string name="speak_engine_type">引擎类型</string>
+    <string name="speak_engine_type_http">在线 HTTP</string>
+    <string name="speak_engine_type_edge">微软 Edge（免费）</string>
+    <string name="speak_engine_voice">音色（voice）</string>
+    <string name="speak_engine_pick_voice">选择音色</string>
     <string name="bg_image">背景图片</string>
     <string name="bg_color">背景颜色</string>
     <string name="text_color">文字颜色</string>

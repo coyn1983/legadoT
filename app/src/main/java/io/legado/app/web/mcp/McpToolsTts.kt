@@ -3,6 +3,7 @@ package io.legado.app.web.mcp
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.HttpTTS
 import io.legado.app.help.config.AppConfig
+import io.legado.app.help.tts.EdgeTtsClient
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.utils.GSON
 import okhttp3.Response
@@ -53,6 +54,8 @@ private fun Server.serverAddListTts() {
                     mapOf(
                         "id" to it.id,
                         "name" to it.name,
+                        "engineType" to it.engineType,
+                        "voice" to (it.voice ?: ""),
                         "url" to it.url,
                         "contentType" to (it.contentType ?: ""),
                     )
@@ -100,7 +103,7 @@ private fun Server.serverAddSaveTts() {
             "contentType 用于识别非音频错误响应。保存后用 test_tts 立即验证。",
         inputSchema = ToolSchema(
             properties = buildJsonObject {
-                put("tts", stringProp("HttpTTS JSON 对象(name/url 必填)"))
+                put("tts", stringProp("HttpTTS JSON 对象(name 必填;engineType 为 edge 时可省 url)"))
             },
             required = listOf("tts"),
         ),
@@ -165,7 +168,8 @@ private fun Server.serverAddTestTts() {
     addTool(
         name = "test_tts",
         description = "用样本文本真实请求一次朗读引擎,返回音频字节数与耗时;" +
-            "非音频响应(JSON/文本错误)原样返回错误内容。与 App 朗读同管线(AnalyzeUrl)," +
+            "非音频响应(JSON/文本错误)原样返回错误内容。与 App 朗读同管线" +
+            "(engineType=edge 走内置 Edge 协议,否则走 AnalyzeUrl 请求 url 模板)," +
             "用于调试 url 模板/请求头/loginCheckJs,不播放、不写缓存。",
         inputSchema = ToolSchema(
             properties = buildJsonObject {
@@ -196,6 +200,9 @@ private fun Server.serverAddTestTts() {
             val startMs = System.currentTimeMillis()
             val deferred = debugScope.async {
                 runCatching {
+                    if (tts.isEdgeEngine) {
+                        return@runCatching EdgeTtsClient.synthesize(text, tts.voice, speechRate)
+                    }
                     val analyzeUrl = AnalyzeUrl(
                         tts.url,
                         speakText = text,

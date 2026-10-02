@@ -580,6 +580,11 @@
     <string name="brightness_auto">自動亮度 %s</string>
     <string name="read_aloud_by_page">按頁朗讀</string>
     <string name="speak_engine">朗讀引擎</string>
+    <string name="speak_engine_type">引擎類型</string>
+    <string name="speak_engine_type_http">線上 HTTP</string>
+    <string name="speak_engine_type_edge">微軟 Edge（免費）</string>
+    <string name="speak_engine_voice">音色（voice）</string>
+    <string name="speak_engine_pick_voice">選擇音色</string>
     <string name="bg_image">背景圖片</string>
     <string name="bg_color">背景顏色</string>
     <string name="text_color">文字顏色</string>

@@ -6,6 +6,7 @@ import io.legado.app.base.BaseViewModel
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.HttpTTS
 import io.legado.app.exception.NoStackTraceException
+import io.legado.app.help.tts.EdgeTtsClient
 import io.legado.app.model.ReadAloud
 import io.legado.app.utils.getClipText
 import io.legado.app.utils.isJsonArray
@@ -40,6 +41,16 @@ class HttpTtsEditViewModel(app: Application) : BaseViewModel(app) {
             if (ReadAloud.ttsEngine == httpTTS.id.toString()) ReadAloud.upReadAloudClass()
         }.onSuccess {
             success?.invoke()
+        }
+    }
+
+    fun loadVoices(onSuccess: (List<EdgeTtsClient.EdgeVoice>) -> Unit) {
+        execute {
+            EdgeTtsClient.listVoices()
+        }.onSuccess {
+            onSuccess.invoke(it)
+        }.onError {
+            context.toastOnUi(it.localizedMessage)
         }
     }
 
