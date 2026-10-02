@@ -109,5 +109,42 @@ data class HighlightRule(
                 )                                                                  // 红波浪
             }
         )
+
+        /**
+         * 「彩读上色」预设: 规则页一键载入, 用字色区分不同内容, 载入即启用。
+         * 与 [builtIns] 同名者(引号对话/书名号)会被覆盖为这里的样式。
+         */
+        fun colorPresets(): List<HighlightRule> = listOf(
+            HighlightRule(
+                name = "引号对话",
+                pattern = "[「『“][^」』”]{1,300}[」』”]",
+                isRegex = true,
+                group = GROUP_BUILT_IN
+            ).apply { applyStyle(HighlightStyle(textColor = 0xFF1E88E5.toInt())) },   // 蓝字
+            HighlightRule(
+                name = "书名号",
+                pattern = "《[^》]{1,60}》",
+                isRegex = true,
+                group = GROUP_BUILT_IN
+            ).apply {
+                applyStyle(
+                    HighlightStyle(
+                        underline = HighlightStyle.Underline(HighlightStyle.Kind.WAVY, 0xFFE53935.toInt())
+                    )
+                )                                                                  // 红波浪
+            },
+            HighlightRule(
+                name = "数字",
+                pattern = "\\d+(?:\\.\\d+)?",
+                isRegex = true,
+                group = GROUP_BUILT_IN
+            ).apply { applyStyle(HighlightStyle(textColor = 0xFFE08A2E.toInt())) },   // 橙字
+            HighlightRule(
+                name = "括号夹注",
+                pattern = "[（(][^）)]{1,60}[）)]",
+                isRegex = true,
+                group = GROUP_BUILT_IN
+            ).apply { applyStyle(HighlightStyle(textColor = 0xFF2E9E6B.toInt())) }    // 绿字
+        )
     }
 }

@@ -38,4 +38,18 @@ class HighlightRuleViewModel(application: Application) : BaseViewModel(applicati
             appDb.highlightRuleDao.update(*rules.toTypedArray())
         }
     }
+
+    /** 载入「彩读上色」预设: 同名规则重置为预设样式, 其余追加到末尾 */
+    fun loadColorPresets() {
+        execute {
+            val dao = appDb.highlightRuleDao
+            val existByName = dao.all.associateBy { it.name }
+            var order = dao.maxOrder
+            val rules = HighlightRule.colorPresets().onEach { rule ->
+                rule.order = ++order
+                existByName[rule.name]?.let { rule.id = it.id }
+            }
+            dao.insert(*rules.toTypedArray())
+        }
+    }
 }

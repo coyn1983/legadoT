@@ -109,18 +109,17 @@ class HighlightRuleAdapter(context: Context, val callBack: CallBack) :
     private val movedItems = linkedSetOf<HighlightRule>()
 
     override fun swap(srcPosition: Int, targetPosition: Int): Boolean {
-        val srcItem = getItem(srcPosition)
-        val targetItem = getItem(targetPosition)
-        if (srcItem != null && targetItem != null) {
-            if (srcItem.order == targetItem.order) {
-                callBack.upOrder()
-            } else {
-                val srcOrder = srcItem.order
-                srcItem.order = targetItem.order
-                targetItem.order = srcOrder
-                movedItems.add(srcItem)
-                movedItems.add(targetItem)
-            }
+        // footer(预设入口)不是规则项, 拖到它上面直接拒绝
+        val srcItem = getItem(srcPosition) ?: return false
+        val targetItem = getItem(targetPosition) ?: return false
+        if (srcItem.order == targetItem.order) {
+            callBack.upOrder()
+        } else {
+            val srcOrder = srcItem.order
+            srcItem.order = targetItem.order
+            targetItem.order = srcOrder
+            movedItems.add(srcItem)
+            movedItems.add(targetItem)
         }
         swapItem(srcPosition, targetPosition)
         return true

@@ -12,14 +12,18 @@ import io.legado.app.constant.AppLog
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.HighlightRule
 import io.legado.app.databinding.ActivityHighlightRuleBinding
+import io.legado.app.databinding.ItemManageBinding
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.model.ReadBook
 import io.legado.app.ui.highlight.edit.HighlightRuleEditDialog
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.ui.widget.recycler.setupManagePage
 import io.legado.app.utils.applyNavigationBarPadding
+import io.legado.app.utils.gone
 import io.legado.app.utils.showDialogFragment
+import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
+import io.legado.app.utils.visible
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.conflate
@@ -63,6 +67,31 @@ class HighlightRuleActivity :
             adapter,
             ItemTouchCallback(adapter).apply { isCanDrag = true },
         )
+        adapter.addFooterView { parent ->
+            ItemManageBinding.inflate(layoutInflater, parent, false).apply {
+                cbName.gone()
+                tvName.visible()
+                tvName.text = getString(R.string.highlight_load_preset)
+                tvSubtitle.visible()
+                tvSubtitle.text = getString(R.string.highlight_load_preset_desc)
+                swtEnabled.gone()
+                ivEdit.gone()
+                ivMenuMore.gone()
+                contentLayout.setOnClickListener { confirmLoadPreset() }
+            }
+        }
+    }
+
+    /** 一键载入「彩读上色」预设 */
+    private fun confirmLoadPreset() {
+        alert(R.string.highlight_load_preset) {
+            setMessage(getString(R.string.highlight_load_preset_msg))
+            noButton()
+            yesButton {
+                viewModel.loadColorPresets()
+                toastOnUi(R.string.highlight_load_preset_done)
+            }
+        }
     }
 
     private fun observeData() {

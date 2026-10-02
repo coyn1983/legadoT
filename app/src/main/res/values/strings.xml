@@ -470,6 +470,10 @@ Placeholders:
     <string name="highlight_fill_pill">胶囊</string>
     <string name="highlight_rule">高亮规则</string>
     <string name="highlight_rule_add">新建高亮规则</string>
+    <string name="highlight_load_preset">载入彩读上色</string>
+    <string name="highlight_load_preset_desc">一键生成对话 / 书名号 / 数字 / 夹注 4 条上色规则</string>
+    <string name="highlight_load_preset_msg">将载入 4 条上色规则：\n\n· 引号对话 — 蓝色字\n· 书名号 — 红色波浪线\n· 数字 — 橙色字\n· 括号夹注 — 绿色字\n\n已有的同名规则会被重置为预设样式并启用，继续？</string>
+    <string name="highlight_load_preset_done">已载入彩读上色预设</string>
     <string name="highlight_rule_edit_title">编辑高亮规则</string>
     <string name="highlight_rule_pattern">关键词 / 正则</string>
     <string name="highlight_rule_scope_hint">作用范围(书名/书源,留空=全部)</string>
