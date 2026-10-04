@@ -146,7 +146,7 @@ fun ItemBookshelfGridBinding.bindBook(
     payloads: MutableList<Any>,
 ) {
     ivCover.transitionName = "book_cover_" + item.name + item.author
-    coverCard.setCardBackgroundColor(root.context.cardBackgroundColor)
+    // 封面已改为裸图（无 MaterialCardView），不再需要设置卡片底色
 
     fun loadCover() = ivCover.load(
         item.getDisplayCover(), item.name, item.author, false, item.getCoverSourceOrigin()

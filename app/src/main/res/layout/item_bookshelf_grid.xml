@@ -12,20 +12,20 @@
     android:scrollbars="none"
     tools:ignore="UnusedAttribute">
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cover_card"
+    <!-- 对齐上游 legado：封面为裸图，不再套 MaterialCardView。
+         上游封面每边内缩 = 容器 padding 8dp + 封面自身 margin 8dp = 16dp，
+         这里用同样的 8+8 复现（此前只有容器 padding 的 8dp，所以封面偏大）。 -->
+    <FrameLayout
+        android:id="@+id/cover_box"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/background_card"
-        app:cardCornerRadius="@dimen/radius_m"
-        app:cardElevation="3dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:strokeWidth="0dp">
+        app:layout_constraintTop_toTopOf="parent">
 
         <io.legado.app.ui.widget.image.CoverImageView
             android:id="@+id/iv_cover"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_margin="8dp"
             android:scaleType="centerCrop"
             android:scrollbars="none"
             app:coverCornerRadius="0dp"
@@ -38,6 +38,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|end"
+            android:layout_margin="8dp"
             android:includeFontPadding="false"
             android:scrollbars="none"
             tools:ignore="RtlHardcoded" />
@@ -47,7 +48,7 @@
             android:layout_width="22dp"
             android:layout_height="22dp"
             android:layout_gravity="top|end"
-            android:layout_margin="@dimen/space_xs"
+            android:layout_margin="12dp"
             android:scrollbars="none"
             android:visibility="invisible"
             app:loading_width="2dp"
@@ -58,6 +59,7 @@
             android:layout_width="match_parent"
             android:layout_height="2dp"
             android:layout_gravity="bottom"
+            android:layout_marginBottom="8dp"
             android:visibility="gone"
             app:indicatorColor="@color/accent"
             app:trackThickness="2dp"
@@ -65,7 +67,7 @@
             tools:progress="60"
             tools:visibility="visible" />
 
-    </com.google.android.material.card.MaterialCardView>
+    </FrameLayout>
 
     <TextView
         android:id="@+id/tv_name"
@@ -82,7 +84,7 @@
         app:skin_textColor="onSurface"
         android:textColor="@color/primaryText"
         android:textSize="@dimen/text_caption"
-        app:layout_constraintTop_toBottomOf="@id/cover_card"
+        app:layout_constraintTop_toBottomOf="@id/cover_box"
         tools:ignore="RtlHardcoded,RtlSymmetry" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

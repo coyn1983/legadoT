@@ -135,7 +135,6 @@ class BooksAdapter(
 
         fun onBind(item: BookGroup, payloads: MutableList<Any>) = binding.run {
             if (payloads.isEmpty()) {
-                coverCard.setCardBackgroundColor(context.cardBackgroundColor)
                 tvName.text = item.groupName
                 ivCover.load(item.cover)
             } else {
