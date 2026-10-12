@@ -38,6 +38,7 @@ import io.legado.app.utils.FileUtils
 import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.mapParallelSafe
 import io.legado.app.utils.postEvent
+import io.legado.app.utils.TextSearchUtils
 import io.legado.app.utils.toStringArray
 import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.currentCoroutineContext
@@ -434,13 +435,15 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
         val content = textChapter.getContent()
         val queryLength = searchContentQuery.length
 
-        var count = 0
-        var index = content.indexOf(searchContentQuery)
-        while (count != searchResult.resultCountWithinChapter) {
-            index = content.indexOf(searchContentQuery, index + queryLength)
-            count += 1
+        // 定位第 N 次出现（N = resultCountWithinChapter），规则与全文搜索完全一致：
+        // 同样大小写不敏感、同样不重叠推进，否则序号会对不上正文位置
+        val contentPosition = TextSearchUtils.indexOfOccurrence(
+            content, searchContentQuery, searchResult.resultCountWithinChapter
+        )
+        if (contentPosition < 0) {
+            // 正文里已找不到该次出现（内容变化/净化差异），返回失败哨兵，由调用方跳过高亮
+            return arrayOf(-1, 0, 0, 0, 0)
         }
-        val contentPosition = index
         var pageIndex = 0
         var length = pages[pageIndex].text.length
         while (length < contentPosition && pageIndex + 1 < pages.size) {

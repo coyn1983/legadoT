@@ -10,6 +10,7 @@ import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.config.AppConfig
 import io.legado.app.utils.ChineseUtils
+import io.legado.app.utils.TextSearchUtils
 import kotlinx.coroutines.ensureActive
 import kotlin.coroutines.coroutineContext
 
@@ -35,6 +36,18 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
         }
     }
 
+    /**
+     * 预热简繁转换词典。
+     * 词典是懒加载的，必须在并发搜索开始前串行执行一次，
+     * 否则多个 worker 会同时触发首次加载。
+     */
+    fun warmUpChineseConverter() {
+        when (AppConfig.chineseConverterType) {
+            1 -> ChineseUtils.t2s("测")
+            2 -> ChineseUtils.s2t("测")
+        }
+    }
+
     suspend fun searchChapter(
         query: String,
         chapter: BookChapter
@@ -43,23 +56,28 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
         val book = book ?: return searchResultsWithinChapter
         val chapterContent = BookHelp.getContent(book, chapter) ?: return searchResultsWithinChapter
         coroutineContext.ensureActive()
-        chapter.title = when (AppConfig.chineseConverterType) {
+        // 不再就地修改 chapter.title：并行搜索时它是共享实体，
+        // 且会与「标题 MD5 文件名缓存」耦合，改为局部变量透传给 ContentProcessor
+        val searchTitle = when (AppConfig.chineseConverterType) {
             1 -> ChineseUtils.t2s(chapter.title)
             2 -> ChineseUtils.s2t(chapter.title)
             else -> chapter.title
         }
         coroutineContext.ensureActive()
         val mContent = contentProcessor!!.getContent(
-            book, chapter, chapterContent, useReplace = replaceEnabled
+            book, chapter, chapterContent,
+            useReplace = replaceEnabled,
+            titleOverride = searchTitle
         ).toString()
-        val positions = searchPosition(mContent, query)
+        // 大小写不敏感的字面量匹配；规则统一在 TextSearchUtils
+        val positions = TextSearchUtils.findAllIgnoreCase(mContent, query)
         positions.forEachIndexed { index, position ->
             coroutineContext.ensureActive()
             val construct = getResultAndQueryIndex(mContent, position, query)
             val result = SearchResult(
                 resultCountWithinChapter = index,
                 resultText = construct.second,
-                chapterTitle = chapter.title,
+                chapterTitle = searchTitle,
                 query = query,
                 chapterIndex = chapter.index,
                 queryIndexInResult = construct.first,
@@ -67,19 +85,8 @@ class SearchContentViewModel(application: Application) : BaseViewModel(applicati
             )
             searchResultsWithinChapter.add(result)
         }
-        searchResultCounts += searchResultsWithinChapter.size
+        // 计数交由调用方单消费者统计，避免并行 += 竞态
         return searchResultsWithinChapter
-    }
-
-    private suspend fun searchPosition(content: String, pattern: String): List<Int> {
-        val position: MutableList<Int> = mutableListOf()
-        var index = content.indexOf(pattern)
-        while (index >= 0) {
-            coroutineContext.ensureActive()
-            position.add(index)
-            index = content.indexOf(pattern, index + pattern.length)
-        }
-        return position
     }
 
     private fun getResultAndQueryIndex(

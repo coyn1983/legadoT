@@ -2274,6 +2274,8 @@ class ReadBookActivity : BaseReadBookActivity(),
         binding.searchMenu.updateSearchInfo()
         val (pageIndex, lineIndex, charIndex, addLine, charIndex2) =
             viewModel.searchResultPositions(curTextChapter, searchResult)
+        // pageIndex < 0：正文里已定位不到该关键词，跳过高亮，避免跳到错误位置
+        if (pageIndex < 0) return
         ReadBook.skipToPage(pageIndex) {
             isSelectingSearchResult = true
             binding.readView.curPage.selectStartMoveIndex(0, lineIndex, charIndex)

@@ -18,6 +18,7 @@ import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.CancellationException
 import splitties.init.appCtx
 import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.regex.Pattern
 
@@ -27,18 +28,22 @@ class ContentProcessor private constructor(
 ) {
 
     companion object {
-        private val processors = hashMapOf<String, WeakReference<ContentProcessor>>()
+        // 并行搜索下多线程可能同时取同一本书的 processor，
+        // 用 ConcurrentHashMap + computeIfAbsent 保证只创建一次，
+        // 同时避免与 upReplaceRules() 的遍历并发时抛 ConcurrentModificationException
+        private val processors = ConcurrentHashMap<String, WeakReference<ContentProcessor>>()
         private val isAndroid8 = Build.VERSION.SDK_INT in 26..27
 
         fun get(book: Book) = get(book.name, book.origin)
 
         fun get(bookName: String, bookOrigin: String): ContentProcessor {
-            val processorWr = processors[bookName + bookOrigin]
-            var processor: ContentProcessor? = processorWr?.get()
-            if (processor == null) {
-                processor = ContentProcessor(bookName, bookOrigin)
-                processors[bookName + bookOrigin] = WeakReference(processor)
-            }
+            val key = bookName + bookOrigin
+            processors.computeIfAbsent(key) {
+                WeakReference(ContentProcessor(bookName, bookOrigin))
+            }.get()?.let { return it }
+            // 引用已被回收：重建一次（极端情况，重复创建无害）
+            val processor = ContentProcessor(bookName, bookOrigin)
+            processors[key] = WeakReference(processor)
             return processor
         }
 
@@ -52,7 +57,7 @@ class ContentProcessor private constructor(
 
     private val titleReplaceRules = CopyOnWriteArrayList<ReplaceRule>()
     private val contentReplaceRules = CopyOnWriteArrayList<ReplaceRule>()
-    val removeSameTitleCache = hashSetOf<String>()
+    val removeSameTitleCache: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     init {
         upReplaceRules()
@@ -95,7 +100,8 @@ class ContentProcessor private constructor(
         includeTitle: Boolean = true,
         useReplace: Boolean = true,
         chineseConvert: Boolean = true,
-        reSegment: Boolean = true
+        reSegment: Boolean = true,
+        titleOverride: String? = null
     ): BookContent {
         var mContent = content
         var sameTitleRemoved = false
@@ -105,7 +111,8 @@ class ContentProcessor private constructor(
             val fileName = chapter.getFileName("nr")
             if (!removeSameTitleCache.contains(fileName)) try {
                 val name = Pattern.quote(book.name)
-                var title = chapter.title.escapeRegex().replace(spaceRegex, "\\\\s*")
+                var title = (titleOverride ?: chapter.title)
+                    .escapeRegex().replace(spaceRegex, "\\\\s*")
                 var matcher = Pattern.compile("^(\\s|\\p{P}|${name})*${title}(\\s)*")
                     .matcher(mContent)
                 if (matcher.find()) {
@@ -115,7 +122,8 @@ class ContentProcessor private constructor(
                     title = Pattern.quote(
                         chapter.getDisplayTitle(
                             contentReplaceRules,
-                            chineseConvert = false
+                            chineseConvert = false,
+                            titleOverride = titleOverride
                         )
                     )
                     matcher = Pattern.compile("^(\\s|\\p{P}|${name})*${title}(\\s)*")
@@ -130,7 +138,7 @@ class ContentProcessor private constructor(
             }
             if (reSegment && book.getReSegment()) {
                 //重新分段
-                mContent = ContentHelp.reSegment(mContent, chapter.title)
+                mContent = ContentHelp.reSegment(mContent, titleOverride ?: chapter.title)
             }
             if (chineseConvert) {
                 //简繁转换
@@ -166,8 +174,12 @@ class ContentProcessor private constructor(
                             mContent = tmp
                         }
                     } catch (e: RegexTimeoutException) {
-                        item.isEnabled = false
-                        appDb.replaceRuleDao.update(item)
+                        // 并行搜索时同一条坏规则会被多个章节命中，
+                        // 收窄为只写一次，避免重复落库与重复提示
+                        if (item.isEnabled) {
+                            item.isEnabled = false
+                            appDb.replaceRuleDao.update(item)
+                        }
                         mContent = item.name + e.stackTraceStr
                     } catch (_: CancellationException) {
                     } catch (e: Exception) {
@@ -181,7 +193,8 @@ class ContentProcessor private constructor(
             //重新添加标题
             mContent = chapter.getDisplayTitle(
                 getTitleReplaceRules(),
-                useReplace = useReplace && book.getUseReplaceRule()
+                useReplace = useReplace && book.getUseReplaceRule(),
+                titleOverride = titleOverride
             ) + "\n" + mContent
         }
         if (isAndroid8) {

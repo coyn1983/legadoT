@@ -5,6 +5,7 @@ import com.github.liuyueyi.quick.transfer.constants.TransType
 
 object ChineseUtils {
 
+    @Volatile
     private var fixed = false
 
     fun s2t(content: String): String {
@@ -26,7 +27,9 @@ object ChineseUtils {
         ChineseUtils.unLoad(*transType)
     }
 
+    @Synchronized
     fun fixT2sDict() {
+        if (fixed) return
         fixed = true
         val excludeList = listOf(
             "槃",

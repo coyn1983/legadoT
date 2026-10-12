@@ -19,7 +19,15 @@ data class SearchResult(
 
     fun getHtmlCompat(textColor: String, accentColor: String): Spanned {
         return if (query.isNotBlank()) {
-            val queryIndexInSurrounding = resultText.indexOf(query)
+            // 大小写不敏感匹配，与搜索命中判定保持一致
+            val queryIndexInSurrounding = resultText.indexOf(query, ignoreCase = true)
+            if (queryIndexInSurrounding < 0) {
+                // 定位不到关键词（正文变化/净化差异），退化为整段不高亮，
+                // 避免 substring(0, -1) 抛 StringIndexOutOfBoundsException
+                val plain = if (AppConfig.isEInkMode) resultText
+                else resultText.colorTextForHtml(textColor)
+                return HtmlCompat.fromHtml(plain, HtmlCompat.FROM_HTML_MODE_LEGACY)
+            }
             val leftString = resultText.substring(0, queryIndexInSurrounding)
             val rightString =
                 resultText.substring(queryIndexInSurrounding + query.length, resultText.length)

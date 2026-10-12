@@ -101,8 +101,9 @@ data class BookChapter(
         replaceRules: List<ReplaceRule>? = null,
         useReplace: Boolean = true,
         chineseConvert: Boolean = true,
+        titleOverride: String? = null,
     ): String {
-        var displayTitle = title.replace(AppPattern.rnRegex, "")
+        var displayTitle = (titleOverride ?: title).replace(AppPattern.rnRegex, "")
         if (chineseConvert) {
             when (AppConfig.chineseConverterType) {
                 1 -> displayTitle = ChineseUtils.t2s(displayTitle)

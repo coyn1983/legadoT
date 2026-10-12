@@ -18,10 +18,10 @@ object ContentHelp {
         var content1 = content
         val dict = makeDict(content1)
         var p = content1
-            .replace("&quot;".toRegex(), "“")
-            .replace("[:：]['\"‘”“]+".toRegex(), "：“")
-            .replace("[\"”“]+\\s*[\"”“][\\s\"”“]*".toRegex(), "”\n“")
-            .split("\n(\\s*)".toRegex()).toTypedArray()
+            .replace(RE_HTML_QUOT, "“")
+            .replace(RE_COLON_QUOTE, "：“")
+            .replace(RE_QUOTE_JOIN, "”\n“")
+            .split(RE_NEWLINE_SPLIT).toTypedArray()
 
         //初始化StringBuilder的长度,在原content的长度基础上做冗余
         var buffer = StringBuilder((content1.length * 1.15).toInt())
@@ -29,7 +29,7 @@ object ContentHelp {
         buffer.append("  ")
         if (chapterName.trim { it <= ' ' } != p[0].trim { it <= ' ' }) {
             // 去除段落内空格。unicode 3000 象形字间隔（中日韩符号和标点），不包含在\s内
-            buffer.append(p[0].replace("[\u3000\\s]+".toRegex(), ""))
+            buffer.append(p[0].replace(RE_BLANK_RUN, ""))
         }
 
         //如果原文存在分段错误，需要把段落重新黏合
@@ -42,21 +42,21 @@ object ContentHelp {
             }
             // 段落开头以外的地方不应该有空格
             // 去除段落内空格。unicode 3000 象形字间隔（中日韩符号和标点），不包含在\s内
-            buffer.append(p[i].replace("[\u3000\\s]".toRegex(), ""))
+            buffer.append(p[i].replace(RE_BLANK_ONE, ""))
         }
         //     预分段预处理
         //         ”“处理为”\n“。
         //         ”。“处理为”。\n“。不考虑“？”  “！”的情况。
         // ”。xxx处理为 ”。\n xxx
         p = buffer.toString()
-            .replace("[\"”“]+\\s*[\"”“]+".toRegex(), "”\n“")
-            .replace("[\"”“]+(？。！?!~)[\"”“]+".toRegex(), "”$1\n“")
-            .replace("[\"”“]+(？。！?!~)([^\"”“])".toRegex(), "”$1\n$2")
+            .replace(RE_QUOTE_PAIR, "”\n“")
+            .replace(RE_QUOTE_END_QUOTE, "”$1\n“")
+            .replace(RE_QUOTE_END_CHAR, "”$1\n$2")
             .replace(
-                "([问说喊唱叫骂道着答])[\\.。]".toRegex(),
+                RE_SAY_COLON,
                 "$1。\n"
             )
-            .split("\n".toRegex()).toTypedArray()
+            .split(RE_NEWLINE).toTypedArray()
         buffer = StringBuilder((content1.length * 1.15).toInt())
         for (s in p) {
             buffer.append("\n")
@@ -64,11 +64,11 @@ object ContentHelp {
         }
         buffer = reduceLength(buffer)
         content1 = (buffer.toString() //         处理章节头部空格和换行
-            .replaceFirst("^\\s+".toRegex(), "")
-            .replace("\\s*[\"”“]+\\s*[\"”“][\\s\"”“]*".toRegex(), "”\n“")
-            .replace("[:：][”“\"\\s]+".toRegex(), "：“")
-            .replace("\n[\"“”]([^\n\"“”]+)([,:，：][\"”“])([^\n\"“”]+)".toRegex(), "\n$1：“$3")
-            .replace("\n(\\s*)".toRegex(), "\n"))
+            .replaceFirst(RE_LEAD_BLANK, "")
+            .replace(RE_QUOTE_JOIN2, "”\n“")
+            .replace(RE_COLON_QUOTE2, "：“")
+            .replace(RE_DIALOG_COLON, "\n$1：“$3")
+            .replace(RE_NEWLINE_SPLIT, "\n"))
         return content1
     }
 
@@ -82,7 +82,7 @@ object ContentHelp {
      * @return
      */
     private fun reduceLength(str: StringBuilder): StringBuilder {
-        val p = str.toString().split("\n".toRegex()).toTypedArray()
+        val p = str.toString().split(RE_NEWLINE).toTypedArray()
         val l = p.size
         val b = BooleanArray(l)
         for (i in 0 until l) {
@@ -620,6 +620,25 @@ object ContentHelp {
     private const val MARK_QUOTATION = "\"“”"
     private const val MARK_QUOTATION_RIGHT = "\"”"
     private val PARAGRAPH_DIAGLOG = "^[\"”“][^\"”“]+[\"”“]$".toRegex()
+
+    //  reSegment/reduceLength 里每章都要用到的正则，提到 object 级预编译，
+    //  避免每章重复编译。Regex/Pattern 不可变且线程安全，
+    //  与「每次调用现场 .toRegex()」语义完全一致。
+    private val RE_HTML_QUOT = "&quot;".toRegex()
+    private val RE_COLON_QUOTE = "[:：]['\"‘”“]+".toRegex()
+    private val RE_QUOTE_JOIN = "[\"”“]+\\s*[\"”“][\\s\"”“]*".toRegex()
+    private val RE_NEWLINE_SPLIT = "\n(\\s*)".toRegex()
+    private val RE_BLANK_RUN = "[\u3000\\s]+".toRegex()
+    private val RE_BLANK_ONE = "[\u3000\\s]".toRegex()
+    private val RE_QUOTE_PAIR = "[\"”“]+\\s*[\"”“]+".toRegex()
+    private val RE_QUOTE_END_QUOTE = "[\"”“]+(？。！?!~)[\"”“]+".toRegex()
+    private val RE_QUOTE_END_CHAR = "[\"”“]+(？。！?!~)([^\"”“])".toRegex()
+    private val RE_SAY_COLON = "([问说喊唱叫骂道着答])[\\.。]".toRegex()
+    private val RE_NEWLINE = "\n".toRegex()
+    private val RE_LEAD_BLANK = "^\\s+".toRegex()
+    private val RE_QUOTE_JOIN2 = "\\s*[\"”“]+\\s*[\"”“][\\s\"”“]*".toRegex()
+    private val RE_COLON_QUOTE2 = "[:：][”“\"\\s]+".toRegex()
+    private val RE_DIALOG_COLON = "\n[\"“”]([^\n\"“”]+)([,:，：][\"”“])([^\n\"“”]+)".toRegex()
 
     //  限制字典的长度
     private const val WORD_MAX_LENGTH = 16
