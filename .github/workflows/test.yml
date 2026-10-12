@@ -59,6 +59,10 @@ jobs:
       type: ${{ matrix.type }}
       VERSION: ${{ needs.prepare.outputs.version }}
       VERSIONL: ${{ needs.prepare.outputs.versionL }}
+      # 私有依赖 org.htmlunit:htmlunit-core-js:5.3.0-legado.3 由下面两个 fork 现场编译后装进 mavenLocal。
+      # 注意：这两个 fork 必须存在于「运行本 workflow 的仓库 owner」名下，
+      # 因为 github.repository_owner 取的是运行仓库的 owner，不是 fork 源。
+      # 若在别人 fork 出来的仓库里跑，这里会解析成不存在的仓库，checkout 直接 404。
       RHINO_FORK_REPO: ${{ github.repository_owner }}/htmlunit-rhino-fork
       CORE_JS_REPO: ${{ github.repository_owner }}/htmlunit-core-js
     steps:
