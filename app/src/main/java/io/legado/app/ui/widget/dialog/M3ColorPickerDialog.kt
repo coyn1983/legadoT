@@ -23,7 +23,7 @@ import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.applyAppTint
 import io.legado.app.utils.gone
 import io.legado.app.utils.isHex
-import io.legado.app.utils.setLayout
+import io.legado.app.utils.setAdaptiveHeight
 import io.legado.app.utils.setRoundBackground
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.visible
@@ -34,7 +34,11 @@ import io.legado.app.utils.visible
  * 纵排三区(见 `dialog_m3_color_picker.xml`):
  * 1. 色板 grid([ARG_PALETTE] 为 null/空时整区 gone)——点选即把该色(自带 alpha)纳入工作态。
  * 2. [io.legado.app.ui.widget.HsvPanelView] 自绘色相/饱和度-明度面板。
- * 3. hex 输入(6/8 位随 showAlpha)+ alpha Slider(仅 showAlpha 时可见)+ 当前/初始对比条 + 确认取消。
+ * 3. hex 输入(6/8 位随 showAlpha)+ alpha Slider(仅 showAlpha 时可见)+ 当前/初始对比条。
+ *
+ * 区 1~3 同处一个 NestedScrollView(@id/content_scroll)内;确认/取消为常驻底栏,不随内容滚动。
+ * 窗口高度由 [setAdaptiveHeight] 控制:内容不超屏高 90% 时贴内容高度,超过则封顶并让本区滚动,
+ * 避免小屏(如小米 6)上底部按钮被顶出屏幕而无法点击。
  *
  * 结果交付走 `setFragmentResult`(非 lambda)——[requestKey] 由 [show] 调用方定义,
  * DialogFragment 经系统旋转重建后如果走构造期传入的 lambda 引用会丢失(新实例是反射重建的,
@@ -114,7 +118,7 @@ class M3ColorPickerDialog : BaseDialogFragment(R.layout.dialog_m3_color_picker) 
 
     override fun onStart() {
         super.onStart()
-        setLayout(0.9f, ViewGroup.LayoutParams.WRAP_CONTENT)
+        setAdaptiveHeight(0.9f, 0.9f)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

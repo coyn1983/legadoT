@@ -16,65 +16,83 @@
         app:popupTheme="@style/AppTheme.PopupOverlay"
         app:titleTextAppearance="@style/ToolbarTitle" />
 
-    <io.legado.app.ui.widget.text.TextInputLayout
+    <!-- 内容区(可滚动):超时输入 + 校验项。小屏上超屏高 90% 时由 setAdaptiveHeight 封顶,本区滚动 -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/content_scroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
-        android:paddingTop="3dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="ifContentScrolls">
 
-        <io.legado.app.lib.theme.view.ThemeEditText
-            android:id="@+id/check_source_timeout"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/check_source_timeout"
-            android:digits="1234567890"
-            tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+            android:orientation="vertical">
 
-    </io.legado.app.ui.widget.text.TextInputLayout>
+            <io.legado.app.ui.widget.text.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:paddingTop="3dp">
 
-    <io.legado.app.ui.widget.text.AccentTextView
-        android:paddingLeft="12dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/check_source_item" />
+                <io.legado.app.lib.theme.view.ThemeEditText
+                    android:id="@+id/check_source_timeout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/check_source_timeout"
+                    android:digits="1234567890"
+                    tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
-    <com.google.android.flexbox.FlexboxLayout
-        android:layout_width="match_parent"
-        android:paddingLeft="12dp"
-        android:paddingRight="12dp"
-        android:layout_height="wrap_content"
-        app:flexWrap="wrap"
-        app:justifyContent="space_between">
+            </io.legado.app.ui.widget.text.TextInputLayout>
 
-        <io.legado.app.lib.theme.view.ThemeCheckBox
-            android:id="@+id/check_search"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/search" />
-        <io.legado.app.lib.theme.view.ThemeCheckBox
-            android:id="@+id/check_discovery"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/discovery" />
-        <io.legado.app.lib.theme.view.ThemeCheckBox
-            android:id="@+id/check_info"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/source_tab_info" />
-        <io.legado.app.lib.theme.view.ThemeCheckBox
-            android:id="@+id/check_category"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/chapter_list" />
-        <io.legado.app.lib.theme.view.ThemeCheckBox
-            android:id="@+id/check_content"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/main_body" />
+            <io.legado.app.ui.widget.text.AccentTextView
+                android:paddingLeft="12dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/check_source_item" />
 
-    </com.google.android.flexbox.FlexboxLayout>
+            <com.google.android.flexbox.FlexboxLayout
+                android:layout_width="match_parent"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:layout_height="wrap_content"
+                app:flexWrap="wrap"
+                app:justifyContent="space_between">
 
+                <io.legado.app.lib.theme.view.ThemeCheckBox
+                    android:id="@+id/check_search"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/search" />
+                <io.legado.app.lib.theme.view.ThemeCheckBox
+                    android:id="@+id/check_discovery"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/discovery" />
+                <io.legado.app.lib.theme.view.ThemeCheckBox
+                    android:id="@+id/check_info"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/source_tab_info" />
+                <io.legado.app.lib.theme.view.ThemeCheckBox
+                    android:id="@+id/check_category"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/chapter_list" />
+                <io.legado.app.lib.theme.view.ThemeCheckBox
+                    android:id="@+id/check_content"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/main_body" />
+
+            </com.google.android.flexbox.FlexboxLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 底部按钮栏(常驻,不随内容滚动) -->
     <com.google.android.flexbox.FlexboxLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

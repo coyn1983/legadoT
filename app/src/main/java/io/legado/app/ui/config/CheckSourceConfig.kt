@@ -2,14 +2,13 @@ package io.legado.app.ui.config
 
 import android.os.Bundle
 import android.view.View
-import android.view.ViewGroup
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.constant.PreferKey
 import io.legado.app.databinding.DialogCheckSourceConfigBinding
 import io.legado.app.model.CheckSource
 import io.legado.app.utils.putPrefString
-import io.legado.app.utils.setLayout
+import io.legado.app.utils.setAdaptiveHeight
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import splitties.views.onClick
@@ -23,7 +22,7 @@ class CheckSourceConfig : BaseDialogFragment(R.layout.dialog_check_source_config
 
     override fun onStart() {
         super.onStart()
-        setLayout(0.9f, ViewGroup.LayoutParams.WRAP_CONTENT)
+        setAdaptiveHeight(0.9f, 0.9f)
     }
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {

@@ -4,56 +4,79 @@
     android:id="@+id/content_view"
     android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:background="@color/background"
     app:skin_background="background"
     android:padding="16dp">
 
-    <TextView
-        android:id="@+id/tv_title"
+    <!--
+      根布局高度必须是 wrap_content：PageKeyDialog 是裸 android.app.Dialog，
+      setAdaptiveHeight 要靠「窗口先按内容量」才能算出自然高度；若这里是 match_parent，
+      测到的永远是满屏，自适应会失效。
+      内容区(可滚动)见下，按钮栏常驻。
+    -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/content_scroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:textSize="@dimen/text_title"
-        android:textStyle="bold"
-        android:text="@string/custom_page_key" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="ifContentScrolls">
 
-    <io.legado.app.ui.widget.text.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:hint="@string/prev_page_key">
-
-        <io.legado.app.lib.theme.view.ThemeEditText
-            android:id="@+id/et_prev"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:singleLine="true" />
+            android:orientation="vertical">
 
-    </io.legado.app.ui.widget.text.TextInputLayout>
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:textSize="@dimen/text_title"
+                android:textStyle="bold"
+                android:text="@string/custom_page_key" />
 
-    <io.legado.app.ui.widget.text.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:hint="@string/next_page_key">
+            <io.legado.app.ui.widget.text.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:hint="@string/prev_page_key">
 
-        <io.legado.app.lib.theme.view.ThemeEditText
-            android:id="@+id/et_next"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:singleLine="true" />
+                <io.legado.app.lib.theme.view.ThemeEditText
+                    android:id="@+id/et_prev"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true" />
 
-    </io.legado.app.ui.widget.text.TextInputLayout>
+            </io.legado.app.ui.widget.text.TextInputLayout>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        app:skin_textColor="onSurfaceVariant"
-        android:textColor="@color/secondaryText"
-        android:text="@string/page_key_set_help" />
+            <io.legado.app.ui.widget.text.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                android:hint="@string/next_page_key">
 
+                <io.legado.app.lib.theme.view.ThemeEditText
+                    android:id="@+id/et_next"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true" />
+
+            </io.legado.app.ui.widget.text.TextInputLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="5dp"
+                app:skin_textColor="onSurfaceVariant"
+                android:textColor="@color/secondaryText"
+                android:text="@string/page_key_set_help" />
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 底部按钮栏(常驻,不随内容滚动) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -2,14 +2,13 @@ package io.legado.app.ui.book.read
 
 import android.os.Bundle
 import android.view.View
-import android.view.ViewGroup
 import android.widget.SeekBar
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.databinding.DialogHighlightShadowBinding
 import io.legado.app.help.HighlightStyle
 import io.legado.app.ui.widget.dialog.M3ColorPickerDialog
-import io.legado.app.utils.setLayout
+import io.legado.app.utils.setAdaptiveHeight
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 
 /**
@@ -52,7 +51,8 @@ class ShadowEditDialog : BaseDialogFragment(R.layout.dialog_highlight_shadow) {
 
     override fun onStart() {
         super.onStart()
-        setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        // 保持满宽观感；高度内容自适应、屏高 90% 封顶
+        setAdaptiveHeight(1f, 0.9f)
     }
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {

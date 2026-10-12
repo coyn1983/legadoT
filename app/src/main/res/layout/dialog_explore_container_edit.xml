@@ -13,152 +13,170 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/explore_container_edit"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_subtitle"
-            android:textStyle="bold" />
-
-        <LinearLayout
+        <!-- 内容区(可滚动):小屏上超屏高 90% 时由 setAdaptiveHeight 封顶,本区滚动、按钮栏常驻 -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/content_scroll"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:overScrollMode="ifContentScrolls">
 
-            <TextView
-                android:id="@+id/tv_source_info"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="2"
-                app:skin_textColor="onSurfaceVariant"
-                android:textColor="@color/secondaryText"
-                android:textSize="@dimen/text_caption"
-                tools:text="笔趣阁 · 玄幻" />
+                android:orientation="vertical">
 
-            <io.legado.app.ui.widget.text.AccentTextView
-                android:id="@+id/tv_change_source"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:padding="4dp"
-                android:text="@string/explore_change_source"
-                android:textSize="@dimen/text_caption" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/explore_container_edit"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_subtitle"
+                    android:textStyle="bold" />
 
-            <io.legado.app.ui.widget.text.AccentTextView
-                android:id="@+id/tv_change_kind"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:padding="4dp"
-                android:text="@string/explore_change_kind"
-                android:textSize="@dimen/text_caption" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-        </LinearLayout>
+                    <TextView
+                        android:id="@+id/tv_source_info"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        app:skin_textColor="onSurfaceVariant"
+                        android:textColor="@color/secondaryText"
+                        android:textSize="@dimen/text_caption"
+                        tools:text="笔趣阁 · 玄幻" />
 
-        <io.legado.app.lib.theme.view.ThemeEditText
-            android:id="@+id/et_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/explore_custom_title"
-            android:singleLine="true"
-            android:textSize="@dimen/text_body" />
+                    <io.legado.app.ui.widget.text.AccentTextView
+                        android:id="@+id/tv_change_source"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:padding="4dp"
+                        android:text="@string/explore_change_source"
+                        android:textSize="@dimen/text_caption" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+                    <io.legado.app.ui.widget.text.AccentTextView
+                        android:id="@+id/tv_change_kind"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:padding="4dp"
+                        android:text="@string/explore_change_kind"
+                        android:textSize="@dimen/text_caption" />
 
-            <io.legado.app.lib.theme.view.ThemeEditText
-                android:id="@+id/et_group"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="@string/explore_group_hint"
-                android:singleLine="true"
-                android:textSize="@dimen/text_body" />
+                </LinearLayout>
 
-            <io.legado.app.ui.widget.text.AccentTextView
-                android:id="@+id/tv_pick_group"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:padding="4dp"
-                android:text="@string/explore_pick_group"
-                android:textSize="@dimen/text_caption" />
+                <io.legado.app.lib.theme.view.ThemeEditText
+                    android:id="@+id/et_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="@string/explore_custom_title"
+                    android:singleLine="true"
+                    android:textSize="@dimen/text_body" />
 
-        </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/explore_style"
-            app:skin_textColor="onSurfaceVariant"
-            android:textColor="@color/secondaryText"
-            android:textSize="@dimen/text_caption" />
+                    <io.legado.app.lib.theme.view.ThemeEditText
+                        android:id="@+id/et_group"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="@string/explore_group_hint"
+                        android:singleLine="true"
+                        android:textSize="@dimen/text_body" />
 
-        <RadioGroup
-            android:id="@+id/rg_style"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:orientation="horizontal">
+                    <io.legado.app.ui.widget.text.AccentTextView
+                        android:id="@+id/tv_pick_group"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="?android:attr/selectableItemBackground"
+                        android:padding="4dp"
+                        android:text="@string/explore_pick_group"
+                        android:textSize="@dimen/text_caption" />
 
-            <io.legado.app.lib.theme.view.ThemeRadioButton
-                android:id="@+id/rb_flow"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="@string/explore_style_flow" />
+                </LinearLayout>
 
-            <io.legado.app.lib.theme.view.ThemeRadioButton
-                android:id="@+id/rb_list"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:text="@string/explore_style_list" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/explore_style"
+                    app:skin_textColor="onSurfaceVariant"
+                    android:textColor="@color/secondaryText"
+                    android:textSize="@dimen/text_caption" />
 
-        </RadioGroup>
+                <RadioGroup
+                    android:id="@+id/rg_style"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:orientation="horizontal">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+                    <io.legado.app.lib.theme.view.ThemeRadioButton
+                        android:id="@+id/rb_flow"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/explore_style_flow" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/explore_list_count"
-                app:skin_textColor="onSurfaceVariant"
-                android:textColor="@color/secondaryText"
-                android:textSize="@dimen/text_caption_l" />
+                    <io.legado.app.lib.theme.view.ThemeRadioButton
+                        android:id="@+id/rb_list"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:text="@string/explore_style_list" />
 
-            <io.legado.app.lib.theme.view.ThemeEditText
-                android:id="@+id/et_count"
-                android:layout_width="64dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:gravity="center"
-                android:inputType="number"
-                android:text="3"
-                android:textSize="@dimen/text_body" />
+                </RadioGroup>
 
-        </LinearLayout>
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/explore_list_count"
+                        app:skin_textColor="onSurfaceVariant"
+                        android:textColor="@color/secondaryText"
+                        android:textSize="@dimen/text_caption_l" />
+
+                    <io.legado.app.lib.theme.view.ThemeEditText
+                        android:id="@+id/et_count"
+                        android:layout_width="64dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:gravity="center"
+                        android:inputType="number"
+                        android:text="3"
+                        android:textSize="@dimen/text_body" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
+
+        <!-- 底部按钮栏(常驻,不随内容滚动) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

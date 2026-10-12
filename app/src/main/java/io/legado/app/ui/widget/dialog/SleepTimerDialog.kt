@@ -7,7 +7,6 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Bundle
 import android.view.View
-import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
 import androidx.core.view.isVisible
@@ -23,7 +22,7 @@ import io.legado.app.utils.dpToPx
 import io.legado.app.utils.getPrefInt
 import io.legado.app.utils.gone
 import io.legado.app.utils.putPrefInt
-import io.legado.app.utils.setLayout
+import io.legado.app.utils.setAdaptiveHeight
 import io.legado.app.utils.setRoundBackground
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
@@ -63,7 +62,7 @@ class SleepTimerDialog : BaseDialogFragment(R.layout.dialog_sleep_timer) {
 
     override fun onStart() {
         super.onStart()
-        setLayout(0.9f, ViewGroup.LayoutParams.WRAP_CONTENT)
+        setAdaptiveHeight(0.9f, 0.9f)
     }
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {

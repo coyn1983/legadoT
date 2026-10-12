@@ -20,80 +20,91 @@
         app:title="@string/group_edit"
         app:titleTextAppearance="@style/ToolbarTitle" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- 内容区(可滚动):小屏上超屏高 90% 时由 setAdaptiveHeight 封顶,本区滚动、按钮栏常驻 -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/content_scroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/background_menu">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="ifContentScrolls">
 
-        <io.legado.app.ui.widget.image.CoverImageView
-            android:id="@+id/iv_cover"
-            android:layout_width="90dp"
-            android:layout_height="126dp"
-            android:layout_margin="6dp"
-            android:contentDescription="@string/img_cover"
-            android:scaleType="centerCrop"
-            android:src="@drawable/image_cover_default"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:ignore="ImageContrastCheck" />
-
-
-        <io.legado.app.ui.widget.text.TextInputLayout
-            android:id="@+id/til_group_name"
-            android:layout_width="0dp"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="6dp"
-            android:hint="@string/group_name"
-            app:layout_constraintBottom_toTopOf="@+id/til_sort"
-            app:layout_constraintLeft_toRightOf="@+id/iv_cover"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:background="@color/background_menu">
 
-            <io.legado.app.lib.theme.view.ThemeEditText
-                android:id="@+id/tie_group_name"
-                android:layout_width="match_parent"
+            <io.legado.app.ui.widget.image.CoverImageView
+                android:id="@+id/iv_cover"
+                android:layout_width="90dp"
+                android:layout_height="126dp"
+                android:layout_margin="6dp"
+                android:contentDescription="@string/img_cover"
+                android:scaleType="centerCrop"
+                android:src="@drawable/image_cover_default"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="ImageContrastCheck" />
+
+
+            <io.legado.app.ui.widget.text.TextInputLayout
+                android:id="@+id/til_group_name"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:maxLines="2"
-                tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
-        </io.legado.app.ui.widget.text.TextInputLayout>
+                android:layout_margin="6dp"
+                android:hint="@string/group_name"
+                app:layout_constraintBottom_toTopOf="@+id/til_sort"
+                app:layout_constraintLeft_toRightOf="@+id/iv_cover"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
-        <io.legado.app.ui.widget.text.TextInputLayout
-            android:id="@+id/til_sort"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_margin="6dp"
-            android:hint="@string/sort"
-            app:endIconMode="dropdown_menu"
-            app:layout_constraintLeft_toRightOf="@+id/iv_cover"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/til_group_name">
+                <io.legado.app.lib.theme.view.ThemeEditText
+                    android:id="@+id/tie_group_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="2"
+                    tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
+            </io.legado.app.ui.widget.text.TextInputLayout>
 
-            <io.legado.app.ui.widget.text.AutoCompleteTextView
-                android:id="@+id/sp_sort"
-                android:layout_width="match_parent"
+            <io.legado.app.ui.widget.text.TextInputLayout
+                android:id="@+id/til_sort"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:inputType="none"
-                android:minHeight="48dp"
-                android:paddingStart="12dp"
-                android:paddingTop="6dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="6dp"
-                tools:ignore="SpeakableTextPresentCheck" />
+                android:layout_margin="6dp"
+                android:hint="@string/sort"
+                app:endIconMode="dropdown_menu"
+                app:layout_constraintLeft_toRightOf="@+id/iv_cover"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/til_group_name">
 
-        </io.legado.app.ui.widget.text.TextInputLayout>
+                <io.legado.app.ui.widget.text.AutoCompleteTextView
+                    android:id="@+id/sp_sort"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:minHeight="48dp"
+                    android:paddingStart="12dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="6dp"
+                    tools:ignore="SpeakableTextPresentCheck" />
 
-        <io.legado.app.lib.theme.view.ThemeCheckBox
-            android:id="@+id/cb_enable_refresh"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/allow_drop_down_refresh"
-            android:checked="true"
-            app:layout_constraintTop_toBottomOf="@+id/til_sort"
-            app:layout_constraintLeft_toLeftOf="@id/til_sort" />
+            </io.legado.app.ui.widget.text.TextInputLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <io.legado.app.lib.theme.view.ThemeCheckBox
+                android:id="@+id/cb_enable_refresh"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/allow_drop_down_refresh"
+                android:checked="true"
+                app:layout_constraintTop_toBottomOf="@+id/til_sort"
+                app:layout_constraintLeft_toLeftOf="@id/til_sort" />
 
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 底部按钮栏(常驻,不随内容滚动) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

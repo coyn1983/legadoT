@@ -7,279 +7,301 @@
     android:orientation="vertical"
     android:padding="@dimen/space_l">
 
-    <TextView
+    <!--
+      内容区(可滚动):标题 + 定时段 + 按集段(含两处自定义输入的展开行)。
+      小屏(如小米 6)上内容超屏高 90% 时由 setAdaptiveHeight 封顶,本区滚动;
+      底部的 @id/ll_status(当前状态 + 关闭)常驻,不随内容滚动。
+      注意:layout_weight="1" 只用于 chip 等宽行(测试红线要求 ≥10 处),不受本次改造影响。
+    -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/content_scroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:paddingBottom="@dimen/space_s"
-        android:text="@string/sleep_timer_title"
-        app:skin_textColor="onSurface"
-        android:textColor="@color/primaryText"
-        android:textSize="@dimen/text_subtitle"
-        android:textStyle="bold" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="ifContentScrolls">
 
-    <!-- 定时停止 -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingVertical="@dimen/space_xs"
-        android:text="@string/sleep_timer_by_time"
-        app:skin_textColor="onSurfaceVariant"
-        android:textColor="@color/secondaryText"
-        android:textSize="@dimen/text_caption_l" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/tv_time_p1"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingVertical="9dp"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_caption_l"
-            tools:text="15分" />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tv_time_p2"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingVertical="9dp"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_caption_l"
-            tools:text="30分" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingBottom="@dimen/space_s"
+                android:text="@string/sleep_timer_title"
+                app:skin_textColor="onSurface"
+                android:textColor="@color/primaryText"
+                android:textSize="@dimen/text_subtitle"
+                android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tv_time_p3"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingVertical="9dp"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_caption_l"
-            tools:text="45分" />
+            <!-- 定时停止 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="@dimen/space_xs"
+                android:text="@string/sleep_timer_by_time"
+                app:skin_textColor="onSurfaceVariant"
+                android:textColor="@color/secondaryText"
+                android:textSize="@dimen/text_caption_l" />
 
-        <TextView
-            android:id="@+id/tv_time_p4"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingVertical="9dp"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_caption_l"
-            tools:text="60分" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tv_time_custom"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingVertical="9dp"
-            android:text="@string/sleep_timer_custom"
-            android:textColor="@color/accent"
-            app:skin_textColor="primary"
-            android:textSize="@dimen/text_caption_l" />
+                <TextView
+                    android:id="@+id/tv_time_p1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingVertical="9dp"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_caption_l"
+                    tools:text="15分" />
 
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/tv_time_p2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingVertical="9dp"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_caption_l"
+                    tools:text="30分" />
 
-    <LinearLayout
-        android:id="@+id/ll_time_input"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_xs"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:visibility="gone"
-        tools:visibility="visible">
+                <TextView
+                    android:id="@+id/tv_time_p3"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingVertical="9dp"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_caption_l"
+                    tools:text="45分" />
 
-        <io.legado.app.lib.theme.view.ThemeEditText
-            android:id="@+id/et_time"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="3dp"
-            android:layout_marginEnd="@dimen/space_s"
-            android:autofillHints="@null"
-            android:hint="@string/sleep_timer_minute_hint"
-            android:inputType="number"
-            android:maxLength="4"
-            android:singleLine="true"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            app:skin_hintColor="onSurfaceVariant"
-            android:textColorHint="@color/secondaryText"
-            android:textSize="@dimen/text_body" />
+                <TextView
+                    android:id="@+id/tv_time_p4"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingVertical="9dp"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_caption_l"
+                    tools:text="60分" />
 
-        <TextView
-            android:id="@+id/tv_time_ok"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:paddingHorizontal="@dimen/space_l"
-            android:paddingVertical="9dp"
-            android:text="@string/confirm"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_caption_l" />
+                <TextView
+                    android:id="@+id/tv_time_custom"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingVertical="9dp"
+                    android:text="@string/sleep_timer_custom"
+                    android:textColor="@color/accent"
+                    app:skin_textColor="primary"
+                    android:textSize="@dimen/text_caption_l" />
 
-    </LinearLayout>
+            </LinearLayout>
 
-    <!-- 按集数停止 -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_m"
-        android:paddingVertical="@dimen/space_xs"
-        android:text="@string/sleep_timer_by_chapter"
-        app:skin_textColor="onSurfaceVariant"
-        android:textColor="@color/secondaryText"
-        android:textSize="@dimen/text_caption_l" />
+            <LinearLayout
+                android:id="@+id/ll_time_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+                <io.legado.app.lib.theme.view.ThemeEditText
+                    android:id="@+id/et_time"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="3dp"
+                    android:layout_marginEnd="@dimen/space_s"
+                    android:autofillHints="@null"
+                    android:hint="@string/sleep_timer_minute_hint"
+                    android:inputType="number"
+                    android:maxLength="4"
+                    android:singleLine="true"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    app:skin_hintColor="onSurfaceVariant"
+                    android:textColorHint="@color/secondaryText"
+                    android:textSize="@dimen/text_body" />
 
-        <TextView
-            android:id="@+id/tv_chapter_p1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingVertical="9dp"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_caption_l"
-            tools:text="1集" />
+                <TextView
+                    android:id="@+id/tv_time_ok"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:paddingHorizontal="@dimen/space_l"
+                    android:paddingVertical="9dp"
+                    android:text="@string/confirm"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_caption_l" />
 
-        <TextView
-            android:id="@+id/tv_chapter_p2"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingVertical="9dp"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_caption_l"
-            tools:text="2集" />
+            </LinearLayout>
 
-        <TextView
-            android:id="@+id/tv_chapter_p3"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingVertical="9dp"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_caption_l"
-            tools:text="3集" />
+            <!-- 按集数停止 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_m"
+                android:paddingVertical="@dimen/space_xs"
+                android:text="@string/sleep_timer_by_chapter"
+                app:skin_textColor="onSurfaceVariant"
+                android:textColor="@color/secondaryText"
+                android:textSize="@dimen/text_caption_l" />
 
-        <TextView
-            android:id="@+id/tv_chapter_p4"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingVertical="9dp"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_caption_l"
-            tools:text="5集" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tv_chapter_custom"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:maxLines="1"
-            android:paddingVertical="9dp"
-            android:text="@string/sleep_timer_custom"
-            android:textColor="@color/accent"
-            app:skin_textColor="primary"
-            android:textSize="@dimen/text_caption_l" />
+                <TextView
+                    android:id="@+id/tv_chapter_p1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingVertical="9dp"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_caption_l"
+                    tools:text="1集" />
 
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/tv_chapter_p2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingVertical="9dp"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_caption_l"
+                    tools:text="2集" />
 
-    <LinearLayout
-        android:id="@+id/ll_chapter_input"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_xs"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:visibility="gone"
-        tools:visibility="visible">
+                <TextView
+                    android:id="@+id/tv_chapter_p3"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingVertical="9dp"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_caption_l"
+                    tools:text="3集" />
 
-        <io.legado.app.lib.theme.view.ThemeEditText
-            android:id="@+id/et_chapter"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="3dp"
-            android:layout_marginEnd="@dimen/space_s"
-            android:autofillHints="@null"
-            android:hint="@string/sleep_timer_chapter_hint"
-            android:inputType="number"
-            android:maxLength="4"
-            android:singleLine="true"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            app:skin_hintColor="onSurfaceVariant"
-            android:textColorHint="@color/secondaryText"
-            android:textSize="@dimen/text_body" />
+                <TextView
+                    android:id="@+id/tv_chapter_p4"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingVertical="9dp"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_caption_l"
+                    tools:text="5集" />
 
-        <TextView
-            android:id="@+id/tv_chapter_ok"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="3dp"
-            android:gravity="center"
-            android:paddingHorizontal="@dimen/space_l"
-            android:paddingVertical="9dp"
-            android:text="@string/confirm"
-            app:skin_textColor="onSurface"
-            android:textColor="@color/primaryText"
-            android:textSize="@dimen/text_caption_l" />
+                <TextView
+                    android:id="@+id/tv_chapter_custom"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingVertical="9dp"
+                    android:text="@string/sleep_timer_custom"
+                    android:textColor="@color/accent"
+                    app:skin_textColor="primary"
+                    android:textSize="@dimen/text_caption_l" />
 
-    </LinearLayout>
+            </LinearLayout>
 
-    <!-- 当前状态 + 关闭 -->
+            <LinearLayout
+                android:id="@+id/ll_chapter_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_xs"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <io.legado.app.lib.theme.view.ThemeEditText
+                    android:id="@+id/et_chapter"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="3dp"
+                    android:layout_marginEnd="@dimen/space_s"
+                    android:autofillHints="@null"
+                    android:hint="@string/sleep_timer_chapter_hint"
+                    android:inputType="number"
+                    android:maxLength="4"
+                    android:singleLine="true"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    app:skin_hintColor="onSurfaceVariant"
+                    android:textColorHint="@color/secondaryText"
+                    android:textSize="@dimen/text_body" />
+
+                <TextView
+                    android:id="@+id/tv_chapter_ok"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="3dp"
+                    android:gravity="center"
+                    android:paddingHorizontal="@dimen/space_l"
+                    android:paddingVertical="9dp"
+                    android:text="@string/confirm"
+                    app:skin_textColor="onSurface"
+                    android:textColor="@color/primaryText"
+                    android:textSize="@dimen/text_caption_l" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 当前状态 + 关闭(常驻底栏,不随内容滚动) -->
     <LinearLayout
         android:id="@+id/ll_status"
         android:layout_width="match_parent"

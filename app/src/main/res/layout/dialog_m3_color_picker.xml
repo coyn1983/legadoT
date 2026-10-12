@@ -6,175 +6,201 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <!-- 区①:色板 grid(palette==null 时本区整体 gone) -->
-    <LinearLayout
-        android:id="@+id/layout_palette"
+    <!--
+      内容区(可滚动):色板 / HSV 面板 / hex + alpha + 对比条。
+      小屏上内容自然高超过屏高 90% 时,由 M3ColorPickerDialog.setAdaptiveHeight 把窗口封顶,
+      本区(NestedScrollView)收缩为剩余空间而滚动,底部按钮栏常驻可见可点。
+      注意:layout_weight 只在窗口高度确定(WINDOW 被封顶)时生效;未封顶时窗口贴内容高,观感与改前一致。
+    -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/content_scroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingTop="@dimen/space_l"
-        android:paddingHorizontal="@dimen/space_m">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="ifContentScrolls">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_palette"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:clipToPadding="false"
-            android:overScrollMode="never"
-            tools:listitem="@layout/item_color_swatch" />
+            android:orientation="vertical">
 
-    </LinearLayout>
+            <!-- 区①:色板 grid(palette==null 时本区整体 gone) -->
+            <LinearLayout
+                android:id="@+id/layout_palette"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="@dimen/space_l"
+                android:paddingHorizontal="@dimen/space_m">
 
-    <!-- 区②:HSV 面板(色相横条 + 饱和度/明度方块,自绘) -->
-    <io.legado.app.ui.widget.HsvPanelView
-        android:id="@+id/hsv_panel"
-        android:layout_width="match_parent"
-        android:layout_height="220dp"
-        android:layout_marginTop="@dimen/space_l"
-        android:paddingHorizontal="@dimen/space_l" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recycler_palette"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clipToPadding="false"
+                    android:nestedScrollingEnabled="false"
+                    android:overScrollMode="never"
+                    tools:listitem="@layout/item_color_swatch" />
 
-    <!-- 区③:hex 输入 + alpha slider + 当前/初始对比条 + 确认取消 -->
+            </LinearLayout>
+
+            <!-- 区②:HSV 面板(色相横条 + 饱和度/明度方块,自绘) -->
+            <io.legado.app.ui.widget.HsvPanelView
+                android:id="@+id/hsv_panel"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:layout_marginTop="@dimen/space_l"
+                android:paddingHorizontal="@dimen/space_l" />
+
+            <!-- 区③:hex 输入 + alpha slider + 当前/初始对比条 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_l"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/space_l"
+                android:paddingBottom="@dimen/space_m">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="#"
+                        app:skin_textColor="onSurfaceVariant"
+                        android:textColor="@color/secondaryText"
+                        android:textSize="@dimen/text_title"
+                        android:textStyle="bold"
+                        tools:ignore="HardcodedText" />
+
+                    <io.legado.app.lib.theme.view.ThemeEditText
+                        android:id="@+id/et_hex"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:fontFamily="monospace"
+                        android:hint="RRGGBB"
+                        android:imeOptions="actionDone"
+                        android:inputType="textCapCharacters"
+                        android:singleLine="true"
+                        android:textSize="@dimen/text_title"
+                        tools:ignore="HardcodedText,SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layout_alpha"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_s"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Alpha"
+                        app:skin_textColor="onSurfaceVariant"
+                        android:textColor="@color/secondaryText"
+                        android:textSize="@dimen/text_caption"
+                        tools:ignore="HardcodedText" />
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/slider_alpha"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_s"
+                        android:layout_weight="1"
+                        android:stepSize="1"
+                        android:valueFrom="0"
+                        android:valueTo="255"
+                        app:labelBehavior="gone"
+                        app:tickVisible="false" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_m"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/color_picker_initial"
+                        app:skin_textColor="onSurfaceVariant"
+                        android:textColor="@color/secondaryText"
+                        android:textSize="@dimen/text_caption" />
+
+                    <View
+                        android:id="@+id/view_initial_preview"
+                        android:layout_width="0dp"
+                        android:layout_height="28dp"
+                        android:layout_marginStart="@dimen/space_s"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_eink_border_dialog" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_m"
+                        android:text="@string/color_picker_current"
+                        app:skin_textColor="onSurfaceVariant"
+                        android:textColor="@color/secondaryText"
+                        android:textSize="@dimen/text_caption" />
+
+                    <View
+                        android:id="@+id/view_current_preview"
+                        android:layout_width="0dp"
+                        android:layout_height="28dp"
+                        android:layout_marginStart="@dimen/space_s"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_eink_border_dialog" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 底部按钮栏(常驻,不随内容滚动) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_l"
-        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
         android:paddingHorizontal="@dimen/space_l"
+        android:paddingTop="@dimen/space_l"
         android:paddingBottom="@dimen/space_m">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/tv_cancel"
+            style="@style/Widget.App.Button.Text"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:text="@string/cancel" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="#"
-                app:skin_textColor="onSurfaceVariant"
-                android:textColor="@color/secondaryText"
-                android:textSize="@dimen/text_title"
-                android:textStyle="bold"
-                tools:ignore="HardcodedText" />
-
-            <io.legado.app.lib.theme.view.ThemeEditText
-                android:id="@+id/et_hex"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_weight="1"
-                android:fontFamily="monospace"
-                android:hint="RRGGBB"
-                android:imeOptions="actionDone"
-                android:inputType="textCapCharacters"
-                android:singleLine="true"
-                android:textSize="@dimen/text_title"
-                tools:ignore="HardcodedText,SpeakableTextPresentCheck,TouchTargetSizeCheck" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/layout_alpha"
-            android:layout_width="match_parent"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/tv_ok"
+            style="@style/Widget.App.Button.Tonal"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_s"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Alpha"
-                app:skin_textColor="onSurfaceVariant"
-                android:textColor="@color/secondaryText"
-                android:textSize="@dimen/text_caption"
-                tools:ignore="HardcodedText" />
-
-            <com.google.android.material.slider.Slider
-                android:id="@+id/slider_alpha"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/space_s"
-                android:layout_weight="1"
-                android:stepSize="1"
-                android:valueFrom="0"
-                android:valueTo="255"
-                app:labelBehavior="gone"
-                app:tickVisible="false" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_m"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/color_picker_initial"
-                app:skin_textColor="onSurfaceVariant"
-                android:textColor="@color/secondaryText"
-                android:textSize="@dimen/text_caption" />
-
-            <View
-                android:id="@+id/view_initial_preview"
-                android:layout_width="0dp"
-                android:layout_height="28dp"
-                android:layout_marginStart="@dimen/space_s"
-                android:layout_weight="1"
-                android:background="@drawable/bg_eink_border_dialog" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/space_m"
-                android:text="@string/color_picker_current"
-                app:skin_textColor="onSurfaceVariant"
-                android:textColor="@color/secondaryText"
-                android:textSize="@dimen/text_caption" />
-
-            <View
-                android:id="@+id/view_current_preview"
-                android:layout_width="0dp"
-                android:layout_height="28dp"
-                android:layout_marginStart="@dimen/space_s"
-                android:layout_weight="1"
-                android:background="@drawable/bg_eink_border_dialog" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_l"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/tv_cancel"
-                style="@style/Widget.App.Button.Text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/cancel" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/tv_ok"
-                style="@style/Widget.App.Button.Tonal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/space_s"
-                android:text="@string/ok" />
-
-        </LinearLayout>
+            android:layout_marginStart="@dimen/space_s"
+            android:text="@string/ok" />
 
     </LinearLayout>
 

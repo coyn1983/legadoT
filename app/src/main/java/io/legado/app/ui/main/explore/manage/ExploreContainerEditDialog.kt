@@ -2,7 +2,6 @@ package io.legado.app.ui.main.explore.manage
 
 import android.os.Bundle
 import android.view.View
-import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
@@ -14,7 +13,7 @@ import io.legado.app.help.source.ExploreContainerHelp
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.dialogs.selector
 import io.legado.app.utils.GSON
-import io.legado.app.utils.setLayout
+import io.legado.app.utils.setAdaptiveHeight
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.splitNotBlank
 import io.legado.app.utils.toastOnUi
@@ -49,7 +48,7 @@ class ExploreContainerEditDialog : BaseDialogFragment(R.layout.dialog_explore_co
 
     override fun onStart() {
         super.onStart()
-        setLayout(0.9f, ViewGroup.LayoutParams.WRAP_CONTENT)
+        setAdaptiveHeight(0.9f, 0.9f)
     }
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {

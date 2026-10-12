@@ -6,76 +6,93 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <TextView
+    <!-- 内容区(可滚动):小屏(如小米 6)上超屏高 90% 时由 setAdaptiveHeight 封顶,本区滚动、按钮栏常驻 -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/content_scroll"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/highlight_shadow"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:paddingBottom="16dp" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="ifContentScrolls">
 
-    <!-- 半径 -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/highlight_shadow_radius"
-        android:textSize="14sp"
-        android:paddingBottom="4dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-    <SeekBar
-        android:id="@+id/seekbar_radius"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="20"
-        android:paddingBottom="12dp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/highlight_shadow"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:paddingBottom="16dp" />
 
-    <!-- 横向偏移 -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/highlight_shadow_offset_x"
-        android:textSize="14sp"
-        android:paddingBottom="4dp" />
+            <!-- 半径 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/highlight_shadow_radius"
+                android:textSize="14sp"
+                android:paddingBottom="4dp" />
 
-    <SeekBar
-        android:id="@+id/seekbar_dx"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="20"
-        android:paddingBottom="12dp" />
+            <SeekBar
+                android:id="@+id/seekbar_radius"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="20"
+                android:paddingBottom="12dp" />
 
-    <!-- 纵向偏移 -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/highlight_shadow_offset_y"
-        android:textSize="14sp"
-        android:paddingBottom="4dp" />
+            <!-- 横向偏移 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/highlight_shadow_offset_x"
+                android:textSize="14sp"
+                android:paddingBottom="4dp" />
 
-    <SeekBar
-        android:id="@+id/seekbar_dy"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:max="20"
-        android:paddingBottom="12dp" />
+            <SeekBar
+                android:id="@+id/seekbar_dx"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="20"
+                android:paddingBottom="12dp" />
 
-    <!-- 颜色 -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/highlight_shadow_color"
-        android:textSize="14sp"
-        android:paddingBottom="4dp" />
+            <!-- 纵向偏移 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/highlight_shadow_offset_y"
+                android:textSize="14sp"
+                android:paddingBottom="4dp" />
 
-    <View
-        android:id="@+id/v_shadow_color"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:clickable="true"
-        android:focusable="true"
-        android:background="@android:color/black" />
+            <SeekBar
+                android:id="@+id/seekbar_dy"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="20"
+                android:paddingBottom="12dp" />
 
-    <!-- 按钮 -->
+            <!-- 颜色 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/highlight_shadow_color"
+                android:textSize="14sp"
+                android:paddingBottom="4dp" />
+
+            <View
+                android:id="@+id/v_shadow_color"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@android:color/black" />
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 底部按钮栏(常驻,不随内容滚动) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

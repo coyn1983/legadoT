@@ -3,14 +3,13 @@ package io.legado.app.ui.book.read.config
 import android.app.Dialog
 import android.content.Context
 import android.view.KeyEvent
-import android.view.ViewGroup
 import io.legado.app.constant.PreferKey
 import io.legado.app.databinding.DialogPageKeyBinding
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.utils.getPrefString
 import io.legado.app.utils.hideSoftInput
 import io.legado.app.utils.putPrefString
-import io.legado.app.utils.setLayout
+import io.legado.app.utils.setAdaptiveHeight
 import splitties.views.onClick
 
 
@@ -20,7 +19,8 @@ class PageKeyDialog(context: Context) : Dialog(context) {
 
     override fun onStart() {
         super.onStart()
-        setLayout(0.9f, ViewGroup.LayoutParams.WRAP_CONTENT)
+        // 裸 Dialog：内容自适应 + 屏高 90% 封顶（超限则内容区滚动、底部按钮常驻）
+        setAdaptiveHeight(0.9f, 0.9f, binding.root)
     }
 
     init {
