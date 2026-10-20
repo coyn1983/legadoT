@@ -139,7 +139,15 @@ object BookContent {
         val replaceRegex = contentRule.replaceRegex
         if (!replaceRegex.isNullOrEmpty()) {
             contentStr = contentStr.split(AppPattern.LFRegex).joinToString("\n") { it.trim() }
-            contentStr = analyzeRule.getString(replaceRegex, contentStr)
+            val beforeReplace = contentStr
+            val replaced = analyzeRule.getString(replaceRegex, contentStr)
+            if (replaced.isBlank() && beforeReplace.isNotBlank()) {
+                Debug.log(
+                    bookSource.bookSourceUrl,
+                    "⚠正文替换规则返回空,已保留替换前正文,请检查 ruleContent.replaceRegex: $replaceRegex"
+                )
+            }
+            contentStr = contentAfterReplace(beforeReplace, replaced)
             contentStr = contentStr.split(AppPattern.LFRegex).joinToString("\n") { "　　$it" }
         }
         Debug.log(bookSource.bookSourceUrl, "┌获取章节名称")
@@ -194,4 +202,18 @@ object BookContent {
         }
         return Pair(content, nextUrlList)
     }
+}
+
+/**
+ * 正文全文替换的兜底。
+ *
+ * [ContentRule.replaceRegex] 的语义是「替换规则」(能被 AnalyzeRule 解析的规则串),不是裸正则。
+ * 填成裸正则(例如 `\n{2,}[\s\u3000]*##\n`)时,它会被当成 DOM 选择器去选元素,选不到就返回 null,
+ * 再用空串兜底,于是整章正文被静默抹掉,最终只报一句「内容为空」——
+ * 现象与网络/接口故障一模一样,极难排查。
+ *
+ * 这里在「替换前有内容、替换后变空」时保留替换前内容,避免静默丢正文。
+ */
+internal fun contentAfterReplace(before: String, replaced: String): String {
+    return if (replaced.isBlank() && before.isNotBlank()) before else replaced
 }
