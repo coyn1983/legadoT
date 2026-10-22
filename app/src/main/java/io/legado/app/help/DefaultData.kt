@@ -22,11 +22,18 @@ import java.io.File
 object DefaultData {
 
     fun upVersion() {
+        // 预置朗读引擎的更新只由 httpTtsVersion 决定, 不能挂在 app versionCode 门控下:
+        // versionCode = 20000 + git 提交数, 连续两次打包若无新提交则 versionCode 不变,
+        // 覆盖安装后下面的门控不成立, 新增的预置引擎(如豆包/MiMo)就永远不会导入。
+        if (LocalConfig.needUpHttpTTS) {
+            Coroutine.async {
+                importDefaultHttpTTS()
+            }.onError {
+                it.printOnDebug()
+            }
+        }
         if (LocalConfig.versionCode < AppConst.appInfo.versionCode) {
             Coroutine.async {
-                if (LocalConfig.needUpHttpTTS) {
-                    importDefaultHttpTTS()
-                }
                 if (LocalConfig.needUpTxtTocRule) {
                     importDefaultTocRules()
                 }
