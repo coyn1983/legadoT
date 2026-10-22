@@ -93,6 +93,16 @@ class HttpReadAloudService : BaseReadAloudService(),
         CustomLoadErrorHandlingPolicy()
     }
     private var speechRate: Int = AppConfig.speechRatePlay + 5
+
+    /**
+     * 内置引擎(豆包/MiMo)的文本合并参数, 取自 ddo-tts 的实测值:
+     * 起步 301 字, 每块递增 200, 上限 700。
+     *
+     * 这两个接口都按账号限制连接频率, 逐段建连会把连接数放大一个数量级。
+     */
+    private val builtInReadTextStart = 301
+    private val builtInReadTextStep = 200
+    private val builtInReadTextMax = 700
     private val edgeRetryTimes = 3
     private var downloadTask: Coroutine<*>? = null
     private var playIndexJob: Job? = null
@@ -129,7 +139,9 @@ class HttpReadAloudService : BaseReadAloudService(),
             ReadBook.readAloud()
         } else {
             super.play()
-            if (AppConfig.streamReadAloudAudio) {
+            // 内置引擎(豆包/MiMo)本来就是整块合成再入队, 流式分支没有收益;
+            // 而且流式分支不经过合并与节流, 会退化成逐段建连, 正好踩中服务端风控
+            if (AppConfig.streamReadAloudAudio && !isBuiltInEngine()) {
                 downloadAndPlayAudiosStream()
             } else {
                 downloadAndPlayAudios()
@@ -155,7 +167,113 @@ class HttpReadAloudService : BaseReadAloudService(),
         }
     }
 
+    private fun isBuiltInEngine(): Boolean = ReadAloud.httpTTS?.isBuiltInEngine == true
+
+    /**
+     * 内置引擎(豆包/MiMo)专用的下载循环。
+     *
+     * 这两个接口都按账号做了连接频率风控[^1]: 逐段建连 + 开章预取 10 段, 会在几秒内
+     * 打出十几条连接, 服务端直接回 `710022002 block` 并拒绝后续请求。
+     * 这里照 ddo-tts 的做法:
+     * 1. 段落先累积到 [builtInReadTextStart] 字才发一次请求, 之后每块递增 200, 上限 700;
+     * 2. 每块请求完成按朗读时长 delay, 让请求节奏跟随播放, 而不是"能多快就多快";
+     * 3. 不做下一章预取(见 [preDownloadAudios])。
+     *
+     * [^1]: Edge 走的是微软官方长连接接口, 没有这个限制, 所以不适用本方法。
+     */
+    private fun downloadAndPlayBuiltInAudios() {
+        downloadTask?.cancel()
+        exoPlayer.clearMediaItems()
+        val sessionId = startPlaybackSession()
+        downloadTask = execute {
+            downloadTaskActiveLock.withLock {
+                ensureActive()
+                ensureSessionActive(sessionId)
+                val httpTts = ReadAloud.httpTTS ?: throw NoStackTraceException("tts is null")
+                val startIndex = nowSpeak.coerceAtLeast(0)
+                val merged = StringBuilder()
+                var readTextSize = builtInReadTextStart
+                var blockEndIndex = startIndex
+                for (index in startIndex..contentList.lastIndex) {
+                    ensureActive()
+                    ensureSessionActive(sessionId)
+                    merged.append(getReadTextForPlay(index, contentList[index]))
+                    blockEndIndex = index
+                    if (index < contentList.lastIndex && merged.length < readTextSize) {
+                        continue
+                    }
+                    val blockText = merged.toString()
+                    merged.setLength(0)
+                    try {
+                        enqueueBuiltInBlock(sessionId, httpTts, blockEndIndex, blockText)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        AppLog.put("朗读下载处理失败\n${e.localizedMessage}", e)
+                        pauseReadAloud()
+                        return@execute
+                    }
+                    if (readTextSize < builtInReadTextMax) {
+                        readTextSize = (readTextSize + builtInReadTextStep)
+                            .coerceAtMost(builtInReadTextMax)
+                    }
+                    // 按朗读时长节流: speechRate=10 时约每字 150ms, 语速越快等得越短
+                    val pauseMs = blockText.length * 150L * 10L / speechRate.coerceAtLeast(1)
+                    delay(pauseMs.coerceAtLeast(300L))
+                }
+                ensureSessionActive(sessionId)
+            }
+        }.onError {
+            AppLog.put("朗读下载出错\n${it.localizedMessage}", it, true)
+        }
+    }
+
+    /**
+     * 合成一个合并块并加入播放队列。
+     *
+     * 逻辑与 [downloadAndPlayAudios] 里的 enqueueBlock 一致, 区别是入队用的 index
+     * 换成合并块的最后一段 —— 一个媒体项现在覆盖多段, 播完时进度应推进到该段末尾。
+     */
+    private suspend fun enqueueBuiltInBlock(
+        sessionId: Long,
+        httpTts: HttpTTS,
+        index: Int,
+        text: String
+    ) {
+        val fileName = md5SpeakFileName(text)
+        val speakText = text.replace(AppPattern.notReadAloudRegex, "")
+        if (speakText.isEmpty()) {
+            AppLog.put("阅读段落内容为空，使用无声音频代替。\n朗读文本：$text")
+            createSilentSound(fileName)
+        } else if (!hasSpeakFile(fileName)) {
+            val inputStream = getSpeakStream(httpTts, speakText)
+            if (inputStream != null) {
+                createSpeakFile(fileName, inputStream)
+            } else {
+                createSilentSound(fileName)
+            }
+        }
+        val file = getSpeakFileAsMd5(fileName)
+        enqueueMediaItem(sessionId, createQueueMediaItem(Uri.fromFile(file), index, sessionId))
+        val pauseMs = httpTts.pauseDuration
+        if (pauseMs > 0 && index < contentList.lastIndex) {
+            val pauseName = "pause_$pauseMs"
+            if (!hasSpeakFile(pauseName)) {
+                createPauseFile(pauseName, pauseMs)
+            }
+            val pauseFile = getSpeakFileAsMd5(pauseName)
+            enqueueMediaItem(
+                sessionId,
+                createQueueMediaItem(Uri.fromFile(pauseFile), -1, sessionId)
+            )
+        }
+    }
+
     private fun downloadAndPlayAudios() {
+        if (isBuiltInEngine()) {
+            downloadAndPlayBuiltInAudios()
+            return
+        }
         startDownloadAndQueue(
             onComplete = { httpTts -> preDownloadAudios(httpTts) }
         ) { sessionId, httpTts, index, text ->
@@ -188,6 +306,9 @@ class HttpReadAloudService : BaseReadAloudService(),
     }
 
     private suspend fun preDownloadAudios(httpTts: HttpTTS) {
+        // 内置引擎按账号限连接频率: 开章一次预取 10 段, 等于瞬间打出 10 条连接。
+        // 而合并后的块本来就够长, 预取的收益抵不上被封的代价, 直接跳过。
+        if (httpTts.isBuiltInEngine) return
         val textChapter = ReadBook.nextTextChapter ?: return
         val contentList = textChapter.getNeedReadAloud(0, readAloudByPage, 0, 1)
             .splitToSequence("\n")
@@ -453,27 +574,22 @@ class HttpReadAloudService : BaseReadAloudService(),
     ): InputStream {
         val cookie = httpTts.getHeaderMap()
             .entries.firstOrNull { it.key.equals("Cookie", ignoreCase = true) }?.value
-        while (true) {
-            try {
-                val audio = DouBaoTtsClient.synthesize(
-                    text = speakText,
-                    voice = httpTts.voice,
-                    speakSpeed = speechRate,
-                    cookie = cookie.orEmpty()
-                )
-                downloadErrorNo = 0
-                return ByteArrayInputStream(audio)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                downloadErrorNo++
-                AppLog.put("豆包朗读出错\n${e.localizedMessage}", e)
-                if (downloadErrorNo > edgeRetryTimes) {
-                    AppLog.put("豆包朗读连续$edgeRetryTimes 次错误，已暂停阅读。", e, true)
-                    throw e
-                }
-                delay(500L * downloadErrorNo)
-            }
+        // 这里刻意不重试: 豆包按账号限制连接频率, 失败后 500ms 就重连只会延长封锁,
+        // 一次失败直接抛给上层暂停朗读, 比"连试 3 次"更容易恢复
+        try {
+            val audio = DouBaoTtsClient.synthesize(
+                text = speakText,
+                voice = httpTts.voice,
+                speakSpeed = speechRate,
+                cookie = cookie.orEmpty()
+            )
+            downloadErrorNo = 0
+            return ByteArrayInputStream(audio)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLog.put("豆包朗读出错\n${e.localizedMessage}", e, true)
+            throw e
         }
     }
 
@@ -485,27 +601,21 @@ class HttpReadAloudService : BaseReadAloudService(),
         speakText: String
     ): InputStream {
         val apiKey = MiMoTtsClient.resolveApiKey(httpTts.getHeaderMap())
-        while (true) {
-            try {
-                val audio = MiMoTtsClient.synthesize(
-                    text = speakText,
-                    voice = httpTts.voice,
-                    speakSpeed = speechRate,
-                    apiKey = apiKey
-                )
-                downloadErrorNo = 0
-                return ByteArrayInputStream(audio)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                downloadErrorNo++
-                AppLog.put("MiMo朗读出错\n${e.localizedMessage}", e)
-                if (downloadErrorNo > edgeRetryTimes) {
-                    AppLog.put("MiMo朗读连续$edgeRetryTimes 次错误，已暂停阅读。", e, true)
-                    throw e
-                }
-                delay(500L * downloadErrorNo)
-            }
+        // MiMo 是计费接口, 失败即重试等于反复扣费, 同样改为不重试直接失败
+        try {
+            val audio = MiMoTtsClient.synthesize(
+                text = speakText,
+                voice = httpTts.voice,
+                speakSpeed = speechRate,
+                apiKey = apiKey
+            )
+            downloadErrorNo = 0
+            return ByteArrayInputStream(audio)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLog.put("MiMo朗读出错\n${e.localizedMessage}", e, true)
+            throw e
         }
     }
 

@@ -137,20 +137,15 @@ object DouBaoTtsClient {
     }
 
     /**
-     * 清掉控制字符与零宽字符，其余原样保留（豆包对文本较宽松）
+     * 文本清洗：只保留中文、字母数字、空白与常用中英标点。
+     *
+     * 用白名单而不是「只删控制字符」，与 ddo-tts 保持一致。豆包对未知字符较敏感，
+     * emoji、生僻符号、零宽字符都没必要冒险送过去。
      */
-    private fun cleanText(text: String): String {
-        val builder = StringBuilder(text.length)
-        text.forEach { ch ->
-            when {
-                ch == '\n' || ch == '\r' || ch == '\t' -> builder.append(' ')
-                ch.code < 0x20 || ch.code == 0x7F -> Unit
-                ch.code in 0x200B..0x200F || ch.code == 0xFEFF -> Unit
-                else -> builder.append(ch)
-            }
-        }
-        return builder.toString().replace(Regex("\\s+"), " ").trim()
-    }
+    private fun cleanText(text: String): String = text
+        .replace(Regex("[^\\w\\s\u4e00-\u9fff，。！？；：、（）《》【】“”‘’,.!?;:'\"()\\[\\]\\-~]"), "")
+        .replace(Regex("\\s+"), " ")
+        .trim()
 
     private suspend fun connect(
         url: String,

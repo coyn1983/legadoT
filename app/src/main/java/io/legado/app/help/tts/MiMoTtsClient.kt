@@ -37,6 +37,16 @@ object MiMoTtsClient {
     private const val API_URL = "https://api.xiaomimimo.com/v1/chat/completions"
     private const val MODEL = "mimo-v2.5-tts"
 
+    /**
+     * 自定义音色模型：不传具体 voice，改由 user 消息里的自然语言描述来"设计"音色
+     */
+    private const val MODEL_DESIGN = "mimo-v2.5-tts-voicedesign"
+
+    /**
+     * voice 以此前缀开头时走自定义音色，例如 `自定义:温柔的中年女声`
+     */
+    private const val VOICE_CUSTOM_PREFIX = "自定义"
+
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -70,12 +80,25 @@ object MiMoTtsClient {
         if (apiKey.isBlank()) {
             throw IOException("小米 MiMo 朗读需要 API Key，请在引擎请求头里填 {\"api-key\":\"sk-...\"}")
         }
+        // voice 写成「自定义:温柔的中年女声」时走 voicedesign 模型：
+        // 此时不传 voice ID，音色完全由 user 消息里的描述决定
+        val rawVoice = voice?.trim().orEmpty()
+        val designPrompt = if (rawVoice.startsWith(VOICE_CUSTOM_PREFIX)) {
+            rawVoice.removePrefix(VOICE_CUSTOM_PREFIX).trimStart(':', '：').trim()
+        } else {
+            ""
+        }
+        val isDesign = designPrompt.isNotEmpty()
         val payload = JSONObject().apply {
-            put("model", MODEL)
+            put("model", if (isDesign) MODEL_DESIGN else MODEL)
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "user")
-                    put("content", rateDescription(speakSpeed))
+                    put(
+                        "content",
+                        if (isDesign) "$designPrompt，${rateDescription(speakSpeed)}"
+                        else rateDescription(speakSpeed)
+                    )
                 })
                 put(JSONObject().apply {
                     put("role", "assistant")
@@ -84,7 +107,9 @@ object MiMoTtsClient {
             })
             put("audio", JSONObject().apply {
                 put("format", "wav")
-                put("voice", voice?.trim()?.takeIf { it.isNotEmpty() } ?: DEFAULT_VOICE)
+                if (!isDesign) {
+                    put("voice", rawVoice.takeIf { it.isNotEmpty() } ?: DEFAULT_VOICE)
+                }
             })
         }
         val request = Request.Builder()
@@ -133,16 +158,11 @@ object MiMoTtsClient {
     /**
      * 去掉控制字符与零宽字符
      */
-    private fun cleanText(text: String): String {
-        val builder = StringBuilder(text.length)
-        text.forEach { ch ->
-            when {
-                ch == '\n' || ch == '\r' || ch == '\t' -> builder.append(' ')
-                ch.code < 0x20 || ch.code == 0x7F -> Unit
-                ch.code in 0x200B..0x200F || ch.code == 0xFEFF -> Unit
-                else -> builder.append(ch)
-            }
-        }
-        return builder.toString().replace(Regex("\\s+"), " ").trim()
-    }
+    /**
+     * 文本清洗：只保留中文、字母数字、空白与常用中英标点（与豆包侧同一套白名单）
+     */
+    private fun cleanText(text: String): String = text
+        .replace(Regex("[^\\w\\s\u4e00-\u9fff，。！？；：、（）《》【】“”‘’,.!?;:'\"()\\[\\]\\-~]"), "")
+        .replace(Regex("\\s+"), " ")
+        .trim()
 }
