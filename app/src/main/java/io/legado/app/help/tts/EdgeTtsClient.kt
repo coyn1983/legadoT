@@ -17,7 +17,6 @@ import okhttp3.WebSocketListener
 import okio.ByteString
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -53,11 +52,6 @@ object EdgeTtsClient {
     private const val WSS_PATH = "/consumer/speech/synthesize/readaloud/edge/v1"
     private const val VOICES_PATH = "/consumer/speech/synthesize/readaloud/voices/list"
     private const val ORIGIN = "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold"
-
-    /**
-     * 1601-01-01 到 1970-01-01 的秒数
-     */
-    private const val WIN_EPOCH = 11644473600.0
 
     private const val CHROMIUM_DEFAULT = "143.0.3650.75"
 
@@ -337,6 +331,8 @@ object EdgeTtsClient {
             .header("Pragma", "no-cache")
             .header("Cache-Control", "no-cache")
             .header("Accept-Language", "en-US,en;q=0.9")
+            // 2025-12 起服务端要求带上 muid, 缺失会握手 403
+            .header("Cookie", "muid=${SecMsGec.generateMuid()};")
             .build()
 
         socket = getProxyClient().newWebSocket(request, listener)
@@ -344,24 +340,16 @@ object EdgeTtsClient {
     }
 
     /**
-     * Sec-MS-GEC: 「当前时间对齐到 5 分钟窗口」的 Windows 文件时间 + 固定令牌做 SHA-256。
+     * Sec-MS-GEC(v2): 「当前时间对齐到 5 分钟窗口」的 Windows 文件时间 + 固定令牌,
+     * 再做 CS64 与改版 SHA-256, 拼成 `<16位>-<64位>`。
      * 服务端据此校验请求时效, 因此本机时钟偏差超过一个窗口就会 403。
      */
-    private fun secMsGec(nowMs: Long): String {
-        var ticks = nowMs / 1000.0 + WIN_EPOCH
-        ticks -= ticks % 300
-        ticks *= 1e7
-        val raw = String.format(Locale.US, "%.0f", ticks) + TRUSTED_CLIENT_TOKEN
-        val digest = MessageDigest.getInstance("SHA-256")
-            .digest(raw.toByteArray(Charsets.US_ASCII))
-        val hex = StringBuilder(digest.size * 2)
-        digest.forEach { hex.append(String.format(Locale.US, "%02X", it.toInt() and 0xFF)) }
-        return hex.toString()
-    }
+    private fun secMsGec(nowMs: Long): String =
+        SecMsGec.v2(nowMs, TRUSTED_CLIENT_TOKEN)
 
     private fun buildWsUrl(nowMs: Long, version: String): String {
         return "wss://$WSS_HOST$WSS_PATH?TrustedClientToken=$TRUSTED_CLIENT_TOKEN" +
-            "&Sec-MS-GEC=${secMsGec(nowMs)}&Sec-MS-GEC-Version=1-$version"
+            "&Sec-MS-GEC=${secMsGec(nowMs)}&Sec-MS-GEC-Version=2-$version"
     }
 
     /**

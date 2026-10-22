@@ -30,7 +30,9 @@ import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.exoplayer.InputStreamDataSource
+import io.legado.app.help.tts.DouBaoTtsClient
 import io.legado.app.help.tts.EdgeTtsClient
+import io.legado.app.help.tts.MiMoTtsClient
 import io.legado.app.model.ReadAloud
 import io.legado.app.model.ReadBook
 import io.legado.app.model.analyzeRule.AnalyzeUrl
@@ -334,6 +336,12 @@ class HttpReadAloudService : BaseReadAloudService(),
         if (httpTts.isEdgeEngine) {
             return getEdgeSpeakStream(httpTts, speakText)
         }
+        if (httpTts.isDouBaoEngine) {
+            return getDouBaoSpeakStream(httpTts, speakText)
+        }
+        if (httpTts.isMiMoEngine) {
+            return getMiMoSpeakStream(httpTts, speakText)
+        }
         while (true) {
             try {
                 val analyzeUrl = AnalyzeUrl(
@@ -429,6 +437,71 @@ class HttpReadAloudService : BaseReadAloudService(),
                 AppLog.put("Edge朗读出错\n${e.localizedMessage}", e)
                 if (downloadErrorNo > edgeRetryTimes) {
                     AppLog.put("Edge朗读连续$edgeRetryTimes 次错误，已暂停阅读。", e, true)
+                    throw e
+                }
+                delay(500L * downloadErrorNo)
+            }
+        }
+    }
+
+    /**
+     * 内置豆包朗读引擎: 走豆包网页端 WebSocket, 需要请求头里的 Cookie
+     */
+    private suspend fun getDouBaoSpeakStream(
+        httpTts: HttpTTS,
+        speakText: String
+    ): InputStream {
+        val cookie = httpTts.getHeaderMap()
+            .entries.firstOrNull { it.key.equals("Cookie", ignoreCase = true) }?.value
+        while (true) {
+            try {
+                val audio = DouBaoTtsClient.synthesize(
+                    text = speakText,
+                    voice = httpTts.voice,
+                    speakSpeed = speechRate,
+                    cookie = cookie.orEmpty()
+                )
+                downloadErrorNo = 0
+                return ByteArrayInputStream(audio)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                downloadErrorNo++
+                AppLog.put("豆包朗读出错\n${e.localizedMessage}", e)
+                if (downloadErrorNo > edgeRetryTimes) {
+                    AppLog.put("豆包朗读连续$edgeRetryTimes 次错误，已暂停阅读。", e, true)
+                    throw e
+                }
+                delay(500L * downloadErrorNo)
+            }
+        }
+    }
+
+    /**
+     * 内置小米 MiMo 朗读引擎: OpenAI 兼容接口, 需要 API Key
+     */
+    private suspend fun getMiMoSpeakStream(
+        httpTts: HttpTTS,
+        speakText: String
+    ): InputStream {
+        val apiKey = MiMoTtsClient.resolveApiKey(httpTts.getHeaderMap())
+        while (true) {
+            try {
+                val audio = MiMoTtsClient.synthesize(
+                    text = speakText,
+                    voice = httpTts.voice,
+                    speakSpeed = speechRate,
+                    apiKey = apiKey
+                )
+                downloadErrorNo = 0
+                return ByteArrayInputStream(audio)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                downloadErrorNo++
+                AppLog.put("MiMo朗读出错\n${e.localizedMessage}", e)
+                if (downloadErrorNo > edgeRetryTimes) {
+                    AppLog.put("MiMo朗读连续$edgeRetryTimes 次错误，已暂停阅读。", e, true)
                     throw e
                 }
                 delay(500L * downloadErrorNo)

@@ -91,6 +91,20 @@
                             android:layout_height="wrap_content"
                             android:text="@string/speak_engine_type_edge" />
 
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_engine_doubao"
+                            style="@style/Widget.App.Chip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/speak_engine_type_doubao" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_engine_mimo"
+                            style="@style/Widget.App.Chip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/speak_engine_type_mimo" />
+
                     </com.google.android.material.chip.ChipGroup>
 
                 </LinearLayout>

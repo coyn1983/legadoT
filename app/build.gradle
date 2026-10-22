@@ -13,6 +13,14 @@ plugins {
 }
 apply from: 'download.gradle'
 
+// 小米 MiMo 朗读的 API Key 放在 local.properties（已被 .gitignore 忽略），不写进仓库
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream { localProps.load(it) }
+}
+def miMoApiKey = localProps.getProperty('MiMo_Api_Key', '')
+
 static def releaseTime() {
     return new Date().format("yy.MMddHH", TimeZone.getTimeZone("GMT+8"))
 }
@@ -68,6 +76,7 @@ android {
 
         buildConfigField "String", "Cronet_Version", "\"$CronetVersion\""
         buildConfigField "String", "Cronet_Main_Version", "\"$CronetMainVersion\""
+        buildConfigField "String", "MiMo_Api_Key", "\"${miMoApiKey}\""
 
         javaCompileOptions {
             annotationProcessorOptions {

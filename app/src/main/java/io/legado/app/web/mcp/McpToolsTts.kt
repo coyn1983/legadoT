@@ -3,7 +3,9 @@ package io.legado.app.web.mcp
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.HttpTTS
 import io.legado.app.help.config.AppConfig
+import io.legado.app.help.tts.DouBaoTtsClient
 import io.legado.app.help.tts.EdgeTtsClient
+import io.legado.app.help.tts.MiMoTtsClient
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.utils.GSON
 import okhttp3.Response
@@ -202,6 +204,25 @@ private fun Server.serverAddTestTts() {
                 runCatching {
                     if (tts.isEdgeEngine) {
                         return@runCatching EdgeTtsClient.synthesize(text, tts.voice, speechRate)
+                    }
+                    if (tts.isDouBaoEngine) {
+                        val cookie = tts.getHeaderMap()
+                            .entries.firstOrNull { it.key.equals("Cookie", ignoreCase = true) }
+                            ?.value
+                        return@runCatching DouBaoTtsClient.synthesize(
+                            text = text,
+                            voice = tts.voice,
+                            speakSpeed = speechRate,
+                            cookie = cookie.orEmpty()
+                        )
+                    }
+                    if (tts.isMiMoEngine) {
+                        return@runCatching MiMoTtsClient.synthesize(
+                            text = text,
+                            voice = tts.voice,
+                            speakSpeed = speechRate,
+                            apiKey = MiMoTtsClient.resolveApiKey(tts.getHeaderMap())
+                        )
                     }
                     val analyzeUrl = AnalyzeUrl(
                         tts.url,

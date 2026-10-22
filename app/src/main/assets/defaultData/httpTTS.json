@@ -34,5 +34,23 @@
     "voice": "zh-CN-XiaoxiaoNeural",
     "url": "",
     "contentType": "audio/mpeg"
+  },
+  {
+    "id": -201,
+    "name": "4.豆包语音",
+    "engineType": "doubao",
+    "voice": "taozi",
+    "url": "",
+    "contentType": "audio/aac",
+    "header": "{\"Cookie\":\"\"}"
+  },
+  {
+    "id": -202,
+    "name": "5.小米MiMo语音",
+    "engineType": "mimo",
+    "voice": "Chloe",
+    "url": "",
+    "contentType": "audio/wav",
+    "header": "{\"api-key\":\"\"}"
   }
 ]

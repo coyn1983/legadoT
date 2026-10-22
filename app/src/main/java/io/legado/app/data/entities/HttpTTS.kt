@@ -57,6 +57,24 @@ data class HttpTTS(
     val isEdgeEngine: Boolean
         get() = engineType == ENGINE_EDGE
 
+    /**
+     * 是否为内置的豆包朗读引擎, 为真时不走 [url] 规则
+     */
+    val isDouBaoEngine: Boolean
+        get() = engineType == ENGINE_DOUBAO
+
+    /**
+     * 是否为内置的小米 MiMo 朗读引擎, 为真时不走 [url] 规则
+     */
+    val isMiMoEngine: Boolean
+        get() = engineType == ENGINE_MIMO
+
+    /**
+     * 内置引擎(Edge/豆包/MiMo)由 app 内部协议合成, 不需要 [url]
+     */
+    val isBuiltInEngine: Boolean
+        get() = isEdgeEngine || isDouBaoEngine || isMiMoEngine
+
     @Suppress("MemberVisibilityCanBePrivate")
     companion object {
 
@@ -70,13 +88,25 @@ data class HttpTTS(
          */
         const val ENGINE_EDGE = "edge"
 
+        /**
+         * 豆包在线语音, 需要用户自己的网页端 Cookie
+         */
+        const val ENGINE_DOUBAO = "doubao"
+
+        /**
+         * 小米 MiMo 在线语音, 需要 API Key
+         */
+        const val ENGINE_MIMO = "mimo"
+
         fun fromJsonDoc(doc: DocumentContext): Result<HttpTTS> {
             return kotlin.runCatching {
                 val loginUi = doc.read<Any>("$.loginUi")
                 val engineType = doc.readString("$.engineType") ?: ENGINE_HTTP
                 val url = doc.readString("$.url")
                 // Edge 引擎由内置协议合成, 不需要 url
-                if (engineType != ENGINE_EDGE && url.isNullOrBlank()) {
+                if (engineType != ENGINE_EDGE && engineType != ENGINE_DOUBAO &&
+                    engineType != ENGINE_MIMO && url.isNullOrBlank()
+                ) {
                     throw IllegalArgumentException("url 不能为空")
                 }
                 HttpTTS(

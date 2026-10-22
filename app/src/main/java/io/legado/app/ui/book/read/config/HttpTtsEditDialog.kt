@@ -13,7 +13,9 @@ import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.entities.HttpTTS
 import io.legado.app.databinding.DialogHttpTtsEditBinding
 import io.legado.app.databinding.ViewCodeEditFieldBinding
+import io.legado.app.help.tts.DouBaoTtsClient
 import io.legado.app.help.tts.EdgeTtsClient
+import io.legado.app.help.tts.MiMoTtsClient
 import io.legado.app.lib.dialogs.SelectItem
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.dialogs.selector
@@ -154,10 +156,12 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
 
     fun initView(httpTTS: HttpTTS) {
         binding.tvName.setText(httpTTS.name)
-        binding.chipEngineHttp.isChecked = !httpTTS.isEdgeEngine
+        binding.chipEngineHttp.isChecked = !httpTTS.isBuiltInEngine
         binding.chipEngineEdge.isChecked = httpTTS.isEdgeEngine
+        binding.chipEngineDoubao.isChecked = httpTTS.isDouBaoEngine
+        binding.chipEngineMimo.isChecked = httpTTS.isMiMoEngine
         voiceField.codeView.setText(httpTTS.voice)
-        applyEngineType(httpTTS.isEdgeEngine)
+        applyEngineType(httpTTS.engineType)
         urlField.codeView.setText(httpTTS.url)
         contentTypeField.codeView.setText(httpTTS.contentType)
         concurrentRateField.codeView.setText(httpTTS.concurrentRate)
@@ -322,43 +326,71 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
     }
 
     private fun currentEngineType(): String {
-        return if (binding.chipEngineEdge.isChecked) HttpTTS.ENGINE_EDGE else HttpTTS.ENGINE_HTTP
+        return when {
+            binding.chipEngineEdge.isChecked -> HttpTTS.ENGINE_EDGE
+            binding.chipEngineDoubao.isChecked -> HttpTTS.ENGINE_DOUBAO
+            binding.chipEngineMimo.isChecked -> HttpTTS.ENGINE_MIMO
+            else -> HttpTTS.ENGINE_HTTP
+        }
     }
 
     private fun initEngineType() {
         binding.chipEngineHttp.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) applyEngineType(isEdge = false)
+            if (isChecked) applyEngineType(HttpTTS.ENGINE_HTTP)
         }
         binding.chipEngineEdge.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) applyEngineType(isEdge = true)
+            if (isChecked) applyEngineType(HttpTTS.ENGINE_EDGE)
+        }
+        binding.chipEngineDoubao.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) applyEngineType(HttpTTS.ENGINE_DOUBAO)
+        }
+        binding.chipEngineMimo.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) applyEngineType(HttpTTS.ENGINE_MIMO)
         }
     }
 
     /**
-     * Edge 引擎由内置协议合成, url/登录/请求头等字段对它没有意义, 直接隐藏
+     * 内置引擎(Edge/豆包)由 app 内部协议合成, url/登录等字段对它没有意义, 直接隐藏;
+     * 豆包靠请求头里的 Cookie 鉴权, 所以 header 字段对它仍然保留
      */
-    private fun applyEngineType(isEdge: Boolean) {
+    private fun applyEngineType(engineType: String) {
+        val isHttp = engineType == HttpTTS.ENGINE_HTTP
+        val isEdge = engineType == HttpTTS.ENGINE_EDGE
+        val isDouBao = engineType == HttpTTS.ENGINE_DOUBAO
+        val isMiMo = engineType == HttpTTS.ENGINE_MIMO
         val httpOnlyIds = intArrayOf(
             R.id.field_url,
             R.id.field_content_type,
             R.id.field_login_url,
             R.id.field_login_ui,
             R.id.field_login_check_js,
-            R.id.field_headers,
             R.id.field_js_lib,
             R.id.cb_is_enable_cookie
         )
         httpOnlyIds.forEach { id ->
             binding.root.findViewById<View>(id)?.visibility =
-                if (isEdge) View.GONE else View.VISIBLE
+                if (isHttp) View.VISIBLE else View.GONE
         }
-        val edgeOnlyIds = intArrayOf(R.id.field_voice, R.id.chip_pick_voice)
-        edgeOnlyIds.forEach { id ->
-            binding.root.findViewById<View>(id)?.visibility =
-                if (isEdge) View.VISIBLE else View.GONE
+        binding.root.findViewById<View>(R.id.field_headers)?.visibility =
+            if (isEdge) View.GONE else View.VISIBLE
+        binding.root.findViewById<View>(R.id.field_voice)?.visibility =
+            if (isHttp) View.GONE else View.VISIBLE
+        // 音色选择器只提供 Edge 的音色列表, 豆包需手填别名或音色 ID
+        binding.root.findViewById<View>(R.id.chip_pick_voice)?.visibility =
+            if (isEdge) View.VISIBLE else View.GONE
+        if (!isHttp && voiceField.codeView.text.isNullOrBlank()) {
+            voiceField.codeView.setText(
+                when {
+                    isEdge -> EdgeTtsClient.DEFAULT_VOICE
+                    isMiMo -> MiMoTtsClient.DEFAULT_VOICE
+                    else -> DouBaoTtsClient.DEFAULT_VOICE
+                }
+            )
         }
-        if (isEdge && voiceField.codeView.text.isNullOrBlank()) {
-            voiceField.codeView.setText(EdgeTtsClient.DEFAULT_VOICE)
+        headersField.textInputLayout.hint = when {
+            isDouBao -> getString(R.string.speak_engine_doubao_header_hint)
+            isMiMo -> getString(R.string.speak_engine_mimo_header_hint)
+            else -> getString(R.string.source_http_header)
         }
     }
 
