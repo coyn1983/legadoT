@@ -45,7 +45,24 @@ object MiMoTtsClient {
     /**
      * voice 以此前缀开头时走自定义音色，例如 `自定义:温柔的中年女声`
      */
-    private const val VOICE_CUSTOM_PREFIX = "自定义"
+    const val VOICE_CUSTOM_PREFIX = "自定义"
+
+    /**
+     * 服务端实际支持的预置音色。
+     *
+     * 来源不是文档，而是服务端自己的报错：填一个不存在的音色时它会回
+     * `Available voices: [mimo_default, 冰糖, 茉莉, 苏打, 白桦, Mia, Chloe, Milo, Dean]`。
+     * 注意是「苏打」，不是 ddo-tts 里写的「苏打打」。
+     */
+    val VOICES: List<String> = listOf(
+        "mimo_default", "冰糖", "茉莉", "苏打", "白桦",
+        "Mia", "Chloe", "Milo", "Dean",
+    )
+
+    /**
+     * 只写了「自定义」却没写描述时用的兜底描述, 避免把"自定义"当成音色 ID 发出去
+     */
+    private const val DEFAULT_DESIGN_PROMPT = "自然、口语化的对话语调"
 
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()
@@ -85,6 +102,7 @@ object MiMoTtsClient {
         val rawVoice = voice?.trim().orEmpty()
         val designPrompt = if (rawVoice.startsWith(VOICE_CUSTOM_PREFIX)) {
             rawVoice.removePrefix(VOICE_CUSTOM_PREFIX).trimStart(':', '：').trim()
+                .ifEmpty { DEFAULT_DESIGN_PROMPT }
         } else {
             ""
         }

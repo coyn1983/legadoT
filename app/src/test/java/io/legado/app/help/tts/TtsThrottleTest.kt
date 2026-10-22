@@ -1,5 +1,6 @@
 package io.legado.app.help.tts
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -99,6 +100,49 @@ class TtsThrottleTest {
         assertTrue(
             "应有「自定义」音色前缀约定",
             src.contains("VOICE_CUSTOM_PREFIX"),
+        )
+    }
+
+    /**
+     * 音色清单以服务端报错里给出的 Available voices 为准,不是文档也不是 ddo-tts 的写法。
+     */
+    @Test
+    fun miMoVoiceListMatchesServerContract() {
+        assertEquals(
+            listOf(
+                "mimo_default", "冰糖", "茉莉", "苏打", "白桦",
+                "Mia", "Chloe", "Milo", "Dean",
+            ),
+            MiMoTtsClient.VOICES,
+        )
+        assertTrue(
+            "默认音色必须落在清单里,否则默认配置会直接 400",
+            MiMoTtsClient.VOICES.contains(MiMoTtsClient.DEFAULT_VOICE),
+        )
+        assertFalse(
+            "「苏打打」是 ddo-tts 的笔误,服务端只认「苏打」",
+            MiMoTtsClient.VOICES.contains("苏打打"),
+        )
+    }
+
+    @Test
+    fun customVoiceWithoutDescriptionFallsBack() {
+        val src = read(miMoPath)
+        assertTrue(
+            "只写「自定义」没写描述时必须兜默认描述,否则会把「自定义」当音色 ID 发出去",
+            src.contains("ifEmpty { DEFAULT_DESIGN_PROMPT }"),
+        )
+    }
+
+    @Test
+    fun voicePickerBranchesByEngineType() {
+        val src = read("src/main/java/io/legado/app/ui/book/read/config/HttpTtsEditDialog.kt")
+        assertTrue("MiMo 应弹固定音色清单", src.contains("MiMoTtsClient.VOICES.map"))
+        assertTrue("豆包应弹音色别名清单", src.contains("DouBaoTtsClient.VOICES.keys.map"))
+        assertTrue("应有自定义嗓音的输入入口", src.contains("inputVoiceDesign()"))
+        assertTrue(
+            "音色按钮应对三个内置引擎可见、只对 HTTP 引擎隐藏",
+            src.contains("if (isHttp) View.GONE else View.VISIBLE"),
         )
     }
 

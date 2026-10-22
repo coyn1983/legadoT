@@ -791,6 +791,9 @@ Cron 使用 5 个字段：**分 时 日 月 周**
     <string name="speak_engine_type_http">在线 HTTP</string>
     <string name="speak_engine_type_edge">微软 Edge（免费）</string>
     <string name="speak_engine_type_doubao">豆包（需 Cookie）</string>
+    <string name="speak_engine_voice_custom">自定义嗓音（用描述生成）</string>
+    <string name="speak_engine_voice_custom_title">自定义嗓音</string>
+    <string name="speak_engine_voice_custom_hint">用一句话描述想要的音色，例如：温柔的中年女声，语速偏慢</string>
     <string name="speak_engine_doubao_header_hint">请求头(JSON)。豆包必须带登录 Cookie，只需三个字段：{"Cookie":"sessionid=...; sid_guard=...; uid_tt=..."}</string>
     <string name="speak_engine_type_mimo">小米 MiMo（需 API Key）</string>
     <string name="speak_engine_mimo_header_hint">请求头(JSON)，MiMo 需填 {"api-key":"sk-..."}</string>

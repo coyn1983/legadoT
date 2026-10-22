@@ -6,11 +6,13 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.viewModels
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.entities.HttpTTS
+import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.databinding.DialogHttpTtsEditBinding
 import io.legado.app.databinding.ViewCodeEditFieldBinding
 import io.legado.app.help.tts.DouBaoTtsClient
@@ -55,6 +57,11 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
     private val webEditRequests = linkedMapOf<String, CodeView>()
     private lateinit var urlField: CodeField
     private lateinit var voiceField: CodeField
+
+    /**
+     * 音色选择列表里「自定义嗓音」那一项的值,不会与真实音色名冲突
+     */
+    private val customVoiceMark = "__tts_custom_voice__"
     private lateinit var contentTypeField: CodeField
     private lateinit var concurrentRateField: CodeField
     private lateinit var loginUrlField: CodeField
@@ -375,9 +382,9 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
             if (isEdge) View.GONE else View.VISIBLE
         binding.root.findViewById<View>(R.id.field_voice)?.visibility =
             if (isHttp) View.GONE else View.VISIBLE
-        // 音色选择器只提供 Edge 的音色列表, 豆包需手填别名或音色 ID
+        // Edge/豆包/MiMo 都有音色可选, 只有自定义 HTTP 引擎不需要
         binding.root.findViewById<View>(R.id.chip_pick_voice)?.visibility =
-            if (isEdge) View.VISIBLE else View.GONE
+            if (isHttp) View.GONE else View.VISIBLE
         if (!isHttp && voiceField.codeView.text.isNullOrBlank()) {
             voiceField.codeView.setText(
                 when {
@@ -394,16 +401,78 @@ class HttpTtsEditDialog() : BaseDialogFragment(R.layout.dialog_http_tts_edit, tr
         }
     }
 
+    /**
+     * 音色选择:内置引擎用固定清单(服务端支持的就是那几个),HTTP 引擎才去拉 Edge 的在线列表
+     */
     private fun initVoicePicker() {
         binding.chipPickVoice.setOnClickListener {
-            viewModel.loadVoices { voices ->
-                context?.selector(
-                    getString(R.string.speak_engine_voice),
-                    voices.map { SelectItem(it.displayName, it.shortName) }
-                ) { _, item, _ ->
-                    voiceField.codeView.setText(item.value)
+            when (currentEngineType()) {
+                HttpTTS.ENGINE_MIMO -> {
+                    val items = MiMoTtsClient.VOICES.map { SelectItem(it, it) } +
+                        SelectItem(
+                            getString(R.string.speak_engine_voice_custom),
+                            customVoiceMark
+                        )
+                    context?.selector(getString(R.string.speak_engine_voice), items) { _, item, _ ->
+                        if (item.value == customVoiceMark) {
+                            inputVoiceDesign()
+                        } else {
+                            voiceField.codeView.setText(item.value)
+                        }
+                    }
+                }
+
+                HttpTTS.ENGINE_DOUBAO -> {
+                    val items = DouBaoTtsClient.VOICES.keys.map { SelectItem(it, it) }
+                    context?.selector(getString(R.string.speak_engine_voice), items) { _, item, _ ->
+                        voiceField.codeView.setText(item.value)
+                    }
+                }
+
+                else -> viewModel.loadVoices { voices ->
+                    context?.selector(
+                        getString(R.string.speak_engine_voice),
+                        voices.map { SelectItem(it.displayName, it.shortName) }
+                    ) { _, item, _ ->
+                        voiceField.codeView.setText(item.value)
+                    }
                 }
             }
+        }
+    }
+
+    /**
+     * 自定义嗓音:让用户用一句话描述音色,存成 `自定义:描述`。
+     * voicedesign 模型就是靠这段描述生成音色,写得越具体效果越可控。
+     */
+    private fun inputVoiceDesign() {
+        val alertBinding = DialogEditTextBinding.inflate(layoutInflater).apply {
+            editView.hint = getString(R.string.speak_engine_voice_custom_hint)
+            editView.setSingleLine(false)
+            editView.maxLines = 3
+            val current = voiceField.codeView.text?.toString().orEmpty()
+            if (current.startsWith(MiMoTtsClient.VOICE_CUSTOM_PREFIX)) {
+                editView.setText(
+                    current.removePrefix(MiMoTtsClient.VOICE_CUSTOM_PREFIX)
+                        .trimStart(':', '：').trim()
+                )
+            }
+        }
+        val dialog = alert(R.string.speak_engine_voice_custom_title) {
+            customView { alertBinding.root }
+            okButton()
+            cancelButton()
+        }
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
+            val desc = alertBinding.editView.text?.toString().orEmpty().trim()
+            voiceField.codeView.setText(
+                if (desc.isEmpty()) {
+                    MiMoTtsClient.VOICE_CUSTOM_PREFIX
+                } else {
+                    "${MiMoTtsClient.VOICE_CUSTOM_PREFIX}:$desc"
+                }
+            )
+            dialog.dismiss()
         }
     }
 
